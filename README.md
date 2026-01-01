@@ -104,7 +104,7 @@ Write to me. I will remember.
 
 ---
 
-*Licensed under the [MIT License](LICENSE).*
+*Licensed under the [ISC License](LICENSE).*
 
 [mcp]: https://modelcontextprotocol.io/
 [qdrant]: https://qdrant.tech/
