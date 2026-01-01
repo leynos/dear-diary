@@ -9,7 +9,7 @@
 //! use dear_diary_embeddings::{EmbeddingProvider, FastEmbedProvider};
 //!
 //! let provider = FastEmbedProvider::new("sentence-transformers/all-MiniLM-L6-v2")?;
-//! let embeddings = provider.embed_documents(&["Hello, world!"]).await?;
+//! let embeddings = provider.embed_documents(vec!["Hello, world!".to_owned()])?;
 //! ```
 
 mod error;

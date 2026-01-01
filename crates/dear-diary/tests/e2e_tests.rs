@@ -7,14 +7,30 @@
 //!
 //! - A `.env` file with Qdrant credentials (see `.env.example`)
 //! - Network access to the Qdrant server
+//! - `E2E_QDRANT=1` environment variable to enable tests
 //!
 //! # Running
 //!
 //! ```bash
-//! cargo test -p dear-diary --test e2e_tests -- --test-threads=1
+//! E2E_QDRANT=1 cargo test -p dear-diary --test e2e_tests -- --test-threads=1
 //! ```
 
 use std::sync::atomic::{AtomicUsize, Ordering};
+
+/// Check if Qdrant e2e tests should run based on environment variable.
+fn should_run_qdrant_e2e() -> bool {
+    matches!(std::env::var("E2E_QDRANT").as_deref(), Ok("1" | "true"))
+}
+
+/// Macro to skip e2e tests when `E2E_QDRANT` is not set.
+macro_rules! skip_unless_e2e {
+    () => {
+        if !should_run_qdrant_e2e() {
+            eprintln!("Skipping Qdrant e2e test; set E2E_QDRANT=1 to enable");
+            return;
+        }
+    };
+}
 
 use dear_diary_config::{DEFAULT_EMBEDDING_MODEL, QdrantSettings, Settings, ToolSettings};
 use dear_diary_embeddings::FastEmbedProvider;
@@ -149,6 +165,7 @@ impl TestFixture {
 #[rstest]
 #[tokio::test]
 async fn test_store_and_retrieve_simple_memory() {
+    skip_unless_e2e!();
     let fixture = TestFixture::new("store_simple").expect("Failed to create test fixture");
 
     // Store information
@@ -200,6 +217,7 @@ async fn test_store_and_retrieve_simple_memory() {
 #[rstest]
 #[tokio::test]
 async fn test_store_with_metadata() {
+    skip_unless_e2e!();
     let fixture = TestFixture::new("store_metadata").expect("Failed to create test fixture");
 
     // Store information with metadata
@@ -264,6 +282,7 @@ async fn test_store_with_metadata() {
 #[rstest]
 #[tokio::test]
 async fn test_search_empty_collection() {
+    skip_unless_e2e!();
     let fixture = TestFixture::new("search_empty").expect("Failed to create test fixture");
 
     // Search in collection that doesn't exist yet
@@ -293,6 +312,7 @@ async fn test_search_empty_collection() {
 #[rstest]
 #[tokio::test]
 async fn test_semantic_search() {
+    skip_unless_e2e!();
     let fixture = TestFixture::new("semantic_search").expect("Failed to create test fixture");
 
     // Store multiple related items
@@ -346,6 +366,7 @@ async fn test_semantic_search() {
 #[rstest]
 #[tokio::test]
 async fn test_search_limit() {
+    skip_unless_e2e!();
     let fixture = TestFixture::new("search_limit").expect("Failed to create test fixture");
 
     // Store multiple items
@@ -439,6 +460,7 @@ fn test_server_info_snapshot() {
 #[rstest]
 #[tokio::test]
 async fn test_collection_exists_after_store() {
+    skip_unless_e2e!();
     let fixture = TestFixture::new("collection_exists").expect("Failed to create test fixture");
 
     // Initially collection doesn't exist
@@ -530,6 +552,7 @@ fn test_read_only_mode_settings() {
 #[rstest]
 #[tokio::test]
 async fn test_deprecate_entry() {
+    skip_unless_e2e!();
     let fixture = TestFixture::new("deprecate_entry").expect("Failed to create test fixture");
 
     // Store an entry
@@ -590,6 +613,7 @@ async fn test_deprecate_entry() {
 #[rstest]
 #[tokio::test]
 async fn test_deprecated_entry_visible_within_7_days() {
+    skip_unless_e2e!();
     let fixture = TestFixture::new("deprecated_visible").expect("Failed to create test fixture");
 
     // Store an entry
@@ -653,6 +677,7 @@ async fn test_deprecated_entry_visible_within_7_days() {
 #[rstest]
 #[tokio::test]
 async fn test_search_result_includes_point_id() {
+    skip_unless_e2e!();
     let fixture = TestFixture::new("point_id").expect("Failed to create test fixture");
 
     // Store an entry

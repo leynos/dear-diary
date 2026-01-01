@@ -1,7 +1,7 @@
 .PHONY: help all clean test build release lint fmt check-fmt markdownlint nixie
 
 
-TARGET ?= dear_diary
+TARGET ?= dear-diary
 
 CARGO ?= cargo
 BUILD_JOBS ?=

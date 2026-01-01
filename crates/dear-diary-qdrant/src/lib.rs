@@ -15,7 +15,7 @@
 //!     None,
 //!     None,
 //!     embedding_provider,
-//! ).await?;
+//! )?;
 //!
 //! let entry = Entry::new("Remember to buy milk");
 //! connector.store(&entry, "memories").await?;
