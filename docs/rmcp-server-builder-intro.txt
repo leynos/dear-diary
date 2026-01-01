@@ -1,0 +1,127 @@
+This document has been cleaned and reformatted for clarity. Redundant sections have been merged, and "rustdoc" artifacts (like `[§]` or `[Source]`) have been removed.
+
+# rmcp-server-builder (vlatest)
+
+## Summary
+`rmcp-server-builder` provides a composable, builder-pattern API for constructing **Model Capability Protocol (MCP)** servers. It allows you to assemble a server from individual capability providers, eliminating the need to manually implement and delegate methods for the `ServerHandler` trait.
+
+---
+
+## Core Concepts
+
+### Why use this crate?
+Instead of implementing a single, massive `ServerHandler` trait, you can write small, focused providers for specific capabilities (Tools, Prompts, Resources) and "plug" them into a builder.
+
+### Key Features
+*   **Capability Auto-Detection**: The server automatically enables capability flags (e.g., `capabilities.tools`) based on which providers you attach.
+*   **Blanket Implementations**: Any type that already implements the full `ServerHandler` trait is automatically compatible with the individual provider traits.
+*   **Fluent API**: Uses a clear, type-safe builder pattern to ensure required fields (like Server Info) are provided.
+
+---
+
+## Getting Started
+
+### 1. Define your Providers
+Implement the specific trait for the capability you want to support. For example, to support tools, implement `ToolsProvider`.
+
+### 2. Compose the Server
+Use the `ServerBuilder` to assemble your components.
+
+```rust
+use rmcp_server_builder::ServerBuilder;
+use rmcp::model::Implementation;
+
+#[tokio::main]
+async fn main() {
+    // 1. Define server identity
+    let info = Implementation::new("my-server", "1.0.0");
+
+    // 2. Build the server by attaching providers
+    let server = ServerBuilder::new()
+        .info(info)
+        .tools(my_tools_provider)     // Implements ToolsProvider
+        .prompts(my_prompts_provider) // Implements PromptsProvider
+        .build();
+    
+    // The resulting `server` now implements `ServerHandler` 
+    // and can be used with rmcp transports.
+}
+```
+
+---
+
+## Core Types
+
+| Type | Purpose |
+| :--- | :--- |
+| **`ServerBuilder`** | The fluent API used to configure and build the server. |
+| **`Server`** | The final server instance that routes requests to the providers. |
+| **`Implementation`** | Metadata about your server (name, version, etc.). |
+| **`ServerCapabilities`** | Defines what the server can do (usually auto-configured). |
+| **`SimpleInfo`** | A basic wrapper for server identity and capabilities. |
+| **`Unset`** | A marker type used by the builder to indicate a capability hasn't been assigned. |
+
+---
+
+## Provider Traits
+
+Each MCP capability has a corresponding trait. To add a feature to your server, implement one or more of these:
+
+*   **`ToolsProvider`**: Handles `list_tools` and `call_tool`.
+*   **`PromptsProvider`**: Handles `list_prompts` and `get_prompt`.
+*   **`ResourcesProvider`**: Handles `list_resources`, `read_resource`, and subscriptions.
+*   **`CompletionProvider`**: Supplies LLM completion suggestions via `complete`.
+*   **`LoggingProvider`**: Manages server log levels via `set_level`.
+*   **`ServerInfoProvider`**: Required; supplies identity and initialization info.
+
+---
+
+## API Reference (Detailed)
+
+### `ServerBuilder`
+The primary entry point for the crate.
+
+```rust
+pub struct ServerBuilder<T, P, R, C, L, I> { /* ... */ }
+
+impl ServerBuilder<Unset, Unset, Unset, Unset, Unset, Unset> {
+    pub fn new() -> Self;
+}
+
+impl<T, P, R, C, L, I> ServerBuilder<T, P, R, C, L, I> {
+    pub fn info<NewI>(self, info: NewI) -> ServerBuilder<T, P, R, C, L, NewI>;
+    pub fn tools<NewT>(self, tools: NewT) -> ServerBuilder<NewT, P, R, C, L, I>;
+    pub fn prompts<NewP>(self, prompts: NewP) -> ServerBuilder<T, NewP, R, C, L, I>;
+    pub fn resources<NewR>(self, resources: NewR) -> ServerBuilder<T, P, NewR, C, L, I>;
+    pub fn build(self) -> Server<T, P, R, C, L, I>;
+}
+```
+
+### `ServerCapabilities`
+Used to manually or automatically define what your server supports.
+
+```rust
+let cap = ServerCapabilities::builder()
+    .enable_logging()
+    .enable_prompts()
+    .enable_resources()
+    .enable_tools()
+    .build();
+```
+
+### `ServerHandler`
+This is the core trait from the base `rmcp` crate. `ServerBuilder` creates a type that implements this trait automatically.
+
+**Methods handled by the builder:**
+- `initialize`: Combines info and capabilities.
+- `list_tools` / `call_tool`: Routed to `ToolsProvider`.
+- `list_prompts` / `get_prompt`: Routed to `PromptsProvider`.
+- `read_resource` / `subscribe`: Routed to `ResourcesProvider`.
+- `complete`: Routed to `CompletionProvider`.
+
+---
+
+## Tips for Implementation
+*   **Custom Logic**: If you need to handle specific notifications (like `on_initialized`), ensure your provider or custom server type handles those specific methods in `ServerHandler`.
+*   **Async**: All provider methods return `Futures` and are designed to work with `tokio` or other async runtimes.
+*   **Context**: Every request provides a `RequestContext`, giving you access to the underlying transport and session information.
