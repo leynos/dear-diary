@@ -16,10 +16,10 @@
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use dear_diary_config::{QdrantSettings, Settings, ToolSettings, DEFAULT_EMBEDDING_MODEL};
+use dear_diary_config::{DEFAULT_EMBEDDING_MODEL, QdrantSettings, Settings, ToolSettings};
 use dear_diary_embeddings::FastEmbedProvider;
 use dear_diary_mcp::DiaryServer;
-use dear_diary_qdrant::{Entry, QdrantConnector, QdrantConnectorImpl};
+use dear_diary_qdrant::{Entry, QdrantConnector, QdrantConnectorImpl, SearchQuery};
 use insta::assert_json_snapshot;
 use qdrant_client::Qdrant;
 use rmcp::ServerHandler;
@@ -131,7 +131,9 @@ impl TestFixture {
             client
                 .delete_collection(&self.collection_name)
                 .await
-                .map_err(|e| format!("Failed to delete collection {}: {e}", self.collection_name))?;
+                .map_err(|e| {
+                    format!("Failed to delete collection {}: {e}", self.collection_name)
+                })?;
         }
 
         Ok(())
@@ -168,7 +170,10 @@ async fn test_store_and_retrieve_simple_memory() {
     // Search for the stored information
     let search_result = fixture
         .connector
-        .search("milk shopping", &fixture.collection_name, 10, None)
+        .search(
+            &SearchQuery::new("milk shopping", 10),
+            &fixture.collection_name,
+        )
         .await;
 
     assert!(
@@ -182,7 +187,7 @@ async fn test_store_and_retrieve_simple_memory() {
     assert!(
         results
             .first()
-            .map_or(false, |r| r.entry.content.contains("milk")),
+            .is_some_and(|r| r.entry.content.contains("milk")),
         "Result should contain stored content"
     );
 
@@ -220,7 +225,10 @@ async fn test_store_with_metadata() {
     // Search for the stored information
     let search_result = fixture
         .connector
-        .search("meeting client", &fixture.collection_name, 10, None)
+        .search(
+            &SearchQuery::new("meeting client", 10),
+            &fixture.collection_name,
+        )
         .await;
 
     assert!(
@@ -261,7 +269,7 @@ async fn test_search_empty_collection() {
     // Search in collection that doesn't exist yet
     let search_result = fixture
         .connector
-        .search("anything", &fixture.collection_name, 10, None)
+        .search(&SearchQuery::new("anything", 10), &fixture.collection_name)
         .await;
 
     assert!(
@@ -271,7 +279,10 @@ async fn test_search_empty_collection() {
     );
 
     let results = search_result.expect("Search should succeed");
-    assert!(results.is_empty(), "Empty collection should return no results");
+    assert!(
+        results.is_empty(),
+        "Empty collection should return no results"
+    );
 
     // Cleanup (nothing to clean, but call anyway for consistency)
     fixture.cleanup().await.expect("Cleanup failed");
@@ -306,7 +317,10 @@ async fn test_semantic_search() {
     // Semantic search for "pet animals"
     let search_result = fixture
         .connector
-        .search("pet animals", &fixture.collection_name, 10, None)
+        .search(
+            &SearchQuery::new("pet animals", 10),
+            &fixture.collection_name,
+        )
         .await;
 
     assert!(
@@ -350,7 +364,7 @@ async fn test_search_limit() {
     // Search with limit of 2
     let search_result = fixture
         .connector
-        .search("memory", &fixture.collection_name, 2, None)
+        .search(&SearchQuery::new("memory", 2), &fixture.collection_name)
         .await;
 
     assert!(
@@ -484,7 +498,10 @@ fn test_read_only_mode_settings() {
     };
 
     // Verify read-only is set correctly
-    assert!(settings.qdrant.read_only, "Read-only mode should be enabled");
+    assert!(
+        settings.qdrant.read_only,
+        "Read-only mode should be enabled"
+    );
 
     let embedding_provider =
         FastEmbedProvider::new(&settings.embedding_model).expect("Failed to create provider");
@@ -529,13 +546,16 @@ async fn test_deprecate_entry() {
     // Search and get the point ID
     let results = fixture
         .connector
-        .search("dentist", &fixture.collection_name, 1, None)
+        .search(&SearchQuery::new("dentist", 1), &fixture.collection_name)
         .await
         .expect("Search should succeed");
 
     assert!(!results.is_empty(), "Should find the entry");
     let result = results.first().expect("Should have at least one result");
-    assert!(result.deprecated_at.is_none(), "Entry should not be deprecated initially");
+    assert!(
+        result.deprecated_at.is_none(),
+        "Entry should not be deprecated initially"
+    );
 
     // Deprecate the entry
     fixture
@@ -550,7 +570,7 @@ async fn test_deprecate_entry() {
     // Search again and verify deprecated_at is set
     let results_after = fixture
         .connector
-        .search("dentist", &fixture.collection_name, 1, None)
+        .search(&SearchQuery::new("dentist", 1), &fixture.collection_name)
         .await
         .expect("Search should succeed");
 
@@ -586,7 +606,10 @@ async fn test_deprecated_entry_visible_within_7_days() {
     // Get the entry and deprecate it
     let results = fixture
         .connector
-        .search("dry cleaning", &fixture.collection_name, 1, None)
+        .search(
+            &SearchQuery::new("dry cleaning", 1),
+            &fixture.collection_name,
+        )
         .await
         .expect("Search should succeed");
 
@@ -603,7 +626,10 @@ async fn test_deprecated_entry_visible_within_7_days() {
     // Search again - entry should still be visible (deprecated < 7 days)
     let results_after = fixture
         .connector
-        .search("dry cleaning", &fixture.collection_name, 1, None)
+        .search(
+            &SearchQuery::new("dry cleaning", 1),
+            &fixture.collection_name,
+        )
         .await
         .expect("Search should succeed");
 
@@ -612,7 +638,9 @@ async fn test_deprecated_entry_visible_within_7_days() {
         "Recently deprecated entry should still be visible"
     );
     assert!(
-        results_after.first().map_or(false, |r| r.deprecated_at.is_some()),
+        results_after
+            .first()
+            .is_some_and(|r| r.deprecated_at.is_some()),
         "Entry should be marked as deprecated"
     );
 
@@ -621,7 +649,7 @@ async fn test_deprecated_entry_visible_within_7_days() {
 }
 
 /// Feature: Deprecating memories
-/// Scenario: SearchResult includes point_id for subsequent operations
+/// Scenario: `SearchResult` includes `point_id` for subsequent operations
 #[rstest]
 #[tokio::test]
 async fn test_search_result_includes_point_id() {
@@ -641,7 +669,7 @@ async fn test_search_result_includes_point_id() {
     // Search and verify point_id is present
     let results = fixture
         .connector
-        .search("point ID", &fixture.collection_name, 1, None)
+        .search(&SearchQuery::new("point ID", 1), &fixture.collection_name)
         .await
         .expect("Search should succeed");
 

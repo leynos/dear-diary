@@ -1,5 +1,6 @@
 //! Entry data model for stored memories.
 
+use qdrant_client::qdrant::Filter;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
@@ -57,6 +58,43 @@ pub struct SearchResult {
     /// Unix timestamp when this entry was deprecated, if applicable.
     /// `None` means the entry is active (not deprecated).
     pub deprecated_at: Option<i64>,
+}
+
+/// Parameters for a semantic search query.
+///
+/// Groups search-related parameters to reduce function argument count.
+#[derive(Debug, Clone)]
+pub struct SearchQuery {
+    /// The search query text.
+    pub query: String,
+
+    /// Maximum number of results to return.
+    pub limit: u64,
+
+    /// Optional filter to apply to the search.
+    pub filter: Option<Filter>,
+}
+
+impl SearchQuery {
+    /// Creates a new search query with the given text and limit.
+    #[must_use]
+    pub fn new(query: impl Into<String>, limit: u64) -> Self {
+        Self {
+            query: query.into(),
+            limit,
+            filter: None,
+        }
+    }
+
+    /// Creates a new search query with a filter.
+    #[must_use]
+    pub fn with_filter(query: impl Into<String>, limit: u64, filter: Filter) -> Self {
+        Self {
+            query: query.into(),
+            limit,
+            filter: Some(filter),
+        }
+    }
 }
 
 #[cfg(test)]

@@ -3,7 +3,7 @@
 //! These tests verify the core functionality of the server using mocked
 //! components to ensure deterministic behavior.
 
-use dear_diary_config::{QdrantSettings, Settings, ToolSettings, DEFAULT_EMBEDDING_MODEL};
+use dear_diary_config::{DEFAULT_EMBEDDING_MODEL, QdrantSettings, Settings, ToolSettings};
 use dear_diary_mcp::DiaryServer;
 use dear_diary_qdrant::{Entry, MockQdrantConnector};
 use rmcp::ServerHandler;
@@ -129,7 +129,11 @@ fn test_server_info() {
     let info = server.get_info();
     assert_eq!(info.server_info.name, "dear-diary");
     assert!(info.instructions.is_some());
-    assert!(info.instructions.as_ref().is_some_and(|i| i.contains("Qdrant")));
+    assert!(
+        info.instructions
+            .as_ref()
+            .is_some_and(|i| i.contains("Qdrant"))
+    );
 }
 
 // ============================================================================
@@ -147,8 +151,8 @@ fn test_entry_without_metadata() {
 /// Test Entry creation with metadata
 #[rstest]
 fn test_entry_with_metadata() {
-    use std::collections::HashMap;
     use serde_json::json;
+    use std::collections::HashMap;
 
     let mut metadata = HashMap::new();
     metadata.insert("category".to_owned(), json!("work"));

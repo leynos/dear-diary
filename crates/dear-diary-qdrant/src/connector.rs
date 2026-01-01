@@ -5,16 +5,15 @@ use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use qdrant_client::qdrant::{
-    CreateCollectionBuilder, Distance, Filter, PointStruct, PointsIdsList,
-    SearchPointsBuilder, SetPayloadPointsBuilder, UpsertPointsBuilder, VectorParamsBuilder,
-    VectorsConfig,
+    CreateCollectionBuilder, Distance, PointStruct, PointsIdsList, SearchPointsBuilder,
+    SetPayloadPointsBuilder, UpsertPointsBuilder, VectorParamsBuilder, VectorsConfig,
 };
 use qdrant_client::{Payload, Qdrant};
 use serde_json::json;
 
 use dear_diary_embeddings::EmbeddingProvider;
 
-use crate::entry::{Entry, SearchResult};
+use crate::entry::{Entry, SearchQuery, SearchResult};
 use crate::error::QdrantError;
 
 #[cfg(any(test, feature = "test-utils"))]
@@ -45,20 +44,16 @@ pub trait QdrantConnector: Send + Sync {
     ///
     /// # Arguments
     ///
-    /// * `query` - The search query text.
+    /// * `search_query` - The search parameters including query text, limit, and filter.
     /// * `collection_name` - The name of the collection to search.
-    /// * `limit` - Maximum number of results to return.
-    /// * `filter` - Optional filter to apply to the search.
     ///
     /// # Errors
     ///
     /// Returns an error if the search operation fails.
     fn search(
         &self,
-        query: &str,
+        search_query: &SearchQuery,
         collection_name: &str,
-        limit: u64,
-        filter: Option<Filter>,
     ) -> impl std::future::Future<Output = Result<Vec<SearchResult>, QdrantError>> + Send;
 
     /// Checks if a collection exists.
@@ -195,8 +190,7 @@ impl<E: EmbeddingProvider> QdrantConnectorImpl<E> {
 
             self.client
                 .create_collection(
-                    CreateCollectionBuilder::new(collection_name)
-                        .vectors_config(vectors_config),
+                    CreateCollectionBuilder::new(collection_name).vectors_config(vectors_config),
                 )
                 .await
                 .map_err(|e| QdrantError::CreateCollectionError(e.to_string()))?;
@@ -220,12 +214,11 @@ impl<E: EmbeddingProvider + 'static> QdrantConnector for QdrantConnectorImpl<E> 
             .embedding_provider
             .embed_documents(vec![entry.content.clone()])?;
 
-        let embedding = embeddings
-            .into_iter()
-            .next()
-            .ok_or_else(|| QdrantError::EmbeddingError(
-                dear_diary_embeddings::EmbeddingError::EmbedError("No embedding returned".to_owned()),
-            ))?;
+        let embedding = embeddings.into_iter().next().ok_or_else(|| {
+            QdrantError::EmbeddingError(dear_diary_embeddings::EmbeddingError::EmbedError(
+                "No embedding returned".to_owned(),
+            ))
+        })?;
 
         // Generate a unique ID
         let point_id = uuid::Uuid::new_v4().to_string();
@@ -236,8 +229,8 @@ impl<E: EmbeddingProvider + 'static> QdrantConnector for QdrantConnectorImpl<E> 
             "metadata": entry.metadata,
         });
 
-        let payload = Payload::try_from(payload_value)
-            .map_err(|e| QdrantError::StoreError(e.to_string()))?;
+        let payload =
+            Payload::try_from(payload_value).map_err(|e| QdrantError::StoreError(e.to_string()))?;
 
         // Create point
         let point = PointStruct::new(point_id, embedding, payload);
@@ -253,10 +246,8 @@ impl<E: EmbeddingProvider + 'static> QdrantConnector for QdrantConnectorImpl<E> 
 
     async fn search(
         &self,
-        query: &str,
+        search_query: &SearchQuery,
         collection_name: &str,
-        limit: u64,
-        filter: Option<Filter>,
     ) -> Result<Vec<SearchResult>, QdrantError> {
         // Check if collection exists
         let exists = self
@@ -270,14 +261,15 @@ impl<E: EmbeddingProvider + 'static> QdrantConnector for QdrantConnectorImpl<E> 
         }
 
         // Embed the query
-        let query_vector = self.embedding_provider.embed_query(query)?;
+        let query_vector = self.embedding_provider.embed_query(&search_query.query)?;
 
         // Build search request
         let mut search_builder =
-            SearchPointsBuilder::new(collection_name, query_vector, limit).with_payload(true);
+            SearchPointsBuilder::new(collection_name, query_vector, search_query.limit)
+                .with_payload(true);
 
-        if let Some(f) = filter {
-            search_builder = search_builder.filter(f);
+        if let Some(ref f) = search_query.filter {
+            search_builder = search_builder.filter(f.clone());
         }
 
         // Execute search
@@ -341,8 +333,8 @@ impl<E: EmbeddingProvider + 'static> QdrantConnector for QdrantConnectorImpl<E> 
         // Unix timestamps in seconds fit comfortably in i64 until year 292 billion
         #[expect(clippy::cast_possible_wrap, reason = "Unix timestamp fits in i64")]
         let payload_value = json!({ "deprecated_at": now as i64 });
-        let payload = Payload::try_from(payload_value)
-            .map_err(|e| QdrantError::StoreError(e.to_string()))?;
+        let payload =
+            Payload::try_from(payload_value).map_err(|e| QdrantError::StoreError(e.to_string()))?;
 
         // Update the point's payload
         self.client

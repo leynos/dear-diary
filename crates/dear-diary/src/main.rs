@@ -15,7 +15,10 @@ use rmcp::ServiceExt;
 ///
 /// Initializes the MCP server with configuration from environment variables
 /// and runs with stdio transport.
-#[expect(clippy::print_stderr, reason = "CLI error output is the intended behaviour")]
+#[expect(
+    clippy::print_stderr,
+    reason = "CLI error output is the intended behaviour"
+)]
 fn main() -> ExitCode {
     // Run the async runtime
     let result = tokio::runtime::Builder::new_multi_thread()

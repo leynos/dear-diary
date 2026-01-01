@@ -13,7 +13,9 @@ pub struct FindRequest {
 
     /// The name of the collection to search in.
     /// If not provided, the default collection will be used.
-    #[schemars(description = "The name of the collection to search in (optional if default is configured)")]
+    #[schemars(
+        description = "The name of the collection to search in (optional if default is configured)"
+    )]
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub collection_name: Option<String>,
 
@@ -26,7 +28,9 @@ pub struct FindRequest {
     /// Include deprecated entries in search results.
     /// By default, entries deprecated more than 7 days ago are hidden.
     /// Set to true to include all deprecated entries.
-    #[schemars(description = "Include deprecated entries that would normally be hidden (older than 7 days)")]
+    #[schemars(
+        description = "Include deprecated entries that would normally be hidden (older than 7 days)"
+    )]
     #[serde(default)]
     pub include_deprecated: bool,
 }

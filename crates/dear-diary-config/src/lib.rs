@@ -23,6 +23,6 @@ mod settings;
 
 pub use error::ConfigError;
 pub use settings::{
-    FilterableField, FilterableFieldCondition, FilterableFieldType, QdrantSettings, Settings,
-    ToolSettings, DEFAULT_EMBEDDING_MODEL,
+    DEFAULT_EMBEDDING_MODEL, FilterableField, FilterableFieldCondition, FilterableFieldType,
+    QdrantSettings, Settings, ToolSettings,
 };

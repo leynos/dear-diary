@@ -26,7 +26,7 @@ mod entry;
 mod error;
 
 pub use connector::{QdrantConnector, QdrantConnectorImpl};
-pub use entry::{Entry, SearchResult};
+pub use entry::{Entry, SearchQuery, SearchResult};
 pub use error::QdrantError;
 
 // Export mock for testing in dependent crates

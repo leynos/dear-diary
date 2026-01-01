@@ -11,11 +11,11 @@ use rmcp::model::{
     CallToolResult, Content, ErrorCode, Implementation, ProtocolVersion, ServerCapabilities,
     ServerInfo,
 };
-use rmcp::{tool, tool_handler, tool_router, ErrorData as McpError, ServerHandler};
+use rmcp::{ErrorData as McpError, ServerHandler, tool, tool_handler, tool_router};
 use serde_json::Value;
 
 use dear_diary_config::Settings;
-use dear_diary_qdrant::{Entry, QdrantConnector};
+use dear_diary_qdrant::{Entry, QdrantConnector, SearchQuery};
 
 use crate::error::McpServerError;
 use crate::tools::{DeprecateRequest, FindRequest, StoreRequest};
@@ -52,10 +52,7 @@ impl<C: QdrantConnector + 'static> DiaryServer<C> {
     }
 
     /// Returns the collection name to use, resolving defaults.
-    fn resolve_collection_name(
-        &self,
-        provided: Option<&str>,
-    ) -> Result<String, McpServerError> {
+    fn resolve_collection_name(&self, provided: Option<&str>) -> Result<String, McpServerError> {
         provided
             .map(String::from)
             .or_else(|| self.settings.qdrant.collection_name.clone())
@@ -67,10 +64,7 @@ impl<C: QdrantConnector + 'static> DiaryServer<C> {
     /// Note: Arbitrary filter support is limited. Currently, only filterable
     /// fields are properly supported. Raw JSON filter parsing is not available
     /// because the Qdrant protobuf Filter type doesn't implement serde traits.
-    fn parse_filter(
-        &self,
-        filter: Option<Value>,
-    ) -> Result<Option<Filter>, McpServerError> {
+    fn parse_filter(&self, filter: Option<Value>) -> Result<Option<Filter>, McpServerError> {
         let Some(_filter_value) = filter else {
             return Ok(None);
         };
@@ -178,9 +172,13 @@ impl<C: QdrantConnector + 'static> DiaryServer<C> {
 
         // Search in Qdrant
         let limit = u64::from(self.settings.qdrant.search_limit);
+        let search_query = match filter {
+            Some(f) => SearchQuery::with_filter(&request.query, limit, f),
+            None => SearchQuery::new(&request.query, limit),
+        };
         let results = self
             .connector
-            .search(&request.query, &collection_name, limit, filter)
+            .search(&search_query, &collection_name)
             .await
             .map_err(|e| McpError {
                 code: ErrorCode::INTERNAL_ERROR,
@@ -278,9 +276,10 @@ impl<C: QdrantConnector + 'static> DiaryServer<C> {
         }
 
         // Search for the entry to deprecate (get top match)
+        let search_query = SearchQuery::new(&request.query, 1);
         let results = self
             .connector
-            .search(&request.query, &collection_name, 1, None)
+            .search(&search_query, &collection_name)
             .await
             .map_err(|e| McpError {
                 code: ErrorCode::INTERNAL_ERROR,
@@ -347,7 +346,7 @@ impl<C: QdrantConnector + 'static> ServerHandler for DiaryServer<C> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use dear_diary_config::{QdrantSettings, ToolSettings, DEFAULT_EMBEDDING_MODEL};
+    use dear_diary_config::{DEFAULT_EMBEDDING_MODEL, QdrantSettings, ToolSettings};
     use dear_diary_qdrant::MockQdrantConnector;
     use rstest::rstest;
 

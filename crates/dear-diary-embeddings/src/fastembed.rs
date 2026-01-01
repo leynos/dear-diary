@@ -39,8 +39,10 @@ impl FastEmbedProvider {
         // Get vector size before moving embedding_model
         let vector_size = Self::get_model_dimension(&embedding_model);
 
-        let model = TextEmbedding::try_new(InitOptions::new(embedding_model).with_show_download_progress(false))
-            .map_err(|e| EmbeddingError::InitializationError(e.to_string()))?;
+        let model = TextEmbedding::try_new(
+            InitOptions::new(embedding_model).with_show_download_progress(false),
+        )
+        .map_err(|e| EmbeddingError::InitializationError(e.to_string()))?;
 
         Ok(Self {
             model,
@@ -70,11 +72,10 @@ impl FastEmbedProvider {
     /// Returns the vector dimension for a given model.
     const fn get_model_dimension(model: &EmbeddingModel) -> usize {
         match model {
-            EmbeddingModel::AllMiniLML6V2 => 384,
-            EmbeddingModel::BGESmallENV15 => 384,
             EmbeddingModel::BGEBaseENV15 => 768,
             EmbeddingModel::BGELargeENV15 => 1024,
-            _ => 384, // Default fallback
+            // AllMiniLML6V2, BGESmallENV15, and other models default to 384
+            _ => 384,
         }
     }
 }
@@ -121,7 +122,9 @@ mod tests {
 
     #[rstest]
     fn test_parse_valid_model_names() {
-        assert!(FastEmbedProvider::parse_model_name("sentence-transformers/all-MiniLM-L6-v2").is_ok());
+        assert!(
+            FastEmbedProvider::parse_model_name("sentence-transformers/all-MiniLM-L6-v2").is_ok()
+        );
         assert!(FastEmbedProvider::parse_model_name("all-MiniLM-L6-v2").is_ok());
         assert!(FastEmbedProvider::parse_model_name("BAAI/bge-small-en-v1.5").is_ok());
     }
@@ -134,8 +137,17 @@ mod tests {
 
     #[rstest]
     fn test_model_dimensions() {
-        assert_eq!(FastEmbedProvider::get_model_dimension(&EmbeddingModel::AllMiniLML6V2), 384);
-        assert_eq!(FastEmbedProvider::get_model_dimension(&EmbeddingModel::BGEBaseENV15), 768);
-        assert_eq!(FastEmbedProvider::get_model_dimension(&EmbeddingModel::BGELargeENV15), 1024);
+        assert_eq!(
+            FastEmbedProvider::get_model_dimension(&EmbeddingModel::AllMiniLML6V2),
+            384
+        );
+        assert_eq!(
+            FastEmbedProvider::get_model_dimension(&EmbeddingModel::BGEBaseENV15),
+            768
+        );
+        assert_eq!(
+            FastEmbedProvider::get_model_dimension(&EmbeddingModel::BGELargeENV15),
+            1024
+        );
     }
 }

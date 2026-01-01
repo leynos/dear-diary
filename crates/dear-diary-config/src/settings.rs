@@ -21,7 +21,6 @@ pub const DEFAULT_EMBEDDING_MODEL: &str = "sentence-transformers/all-MiniLM-L6-v
 /// Default search result limit.
 pub const DEFAULT_SEARCH_LIMIT: u32 = 10;
 
-
 /// Tool-related settings.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ToolSettings {
@@ -270,8 +269,14 @@ mod tests {
     #[rstest]
     fn test_default_tool_settings() {
         let settings = ToolSettings::default();
-        assert_eq!(settings.tool_store_description, DEFAULT_TOOL_STORE_DESCRIPTION);
-        assert_eq!(settings.tool_find_description, DEFAULT_TOOL_FIND_DESCRIPTION);
+        assert_eq!(
+            settings.tool_store_description,
+            DEFAULT_TOOL_STORE_DESCRIPTION
+        );
+        assert_eq!(
+            settings.tool_find_description,
+            DEFAULT_TOOL_FIND_DESCRIPTION
+        );
     }
 
     #[rstest]

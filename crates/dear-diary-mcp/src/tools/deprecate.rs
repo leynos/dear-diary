@@ -8,7 +8,9 @@ use serde::{Deserialize, Serialize};
 pub struct DeprecateRequest {
     /// The search query to find the entry to deprecate.
     /// The top matching result will be marked as deprecated.
-    #[schemars(description = "Search query to find the entry to deprecate (top match will be deprecated)")]
+    #[schemars(
+        description = "Search query to find the entry to deprecate (top match will be deprecated)"
+    )]
     pub query: String,
 
     /// The name of the collection containing the entry.
