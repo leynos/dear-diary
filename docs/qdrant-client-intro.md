@@ -1,6 +1,7 @@
 # qdrant-client
 
-Rust gRPC client for [Qdrant](https://qdrant.tech/), a high-performance vector database. Enables vector search, collection management, and payload operations.
+Rust gRPC client for [Qdrant](https://qdrant.tech/), a high-performance vector
+database. Enables vector search, collection management, and payload operations.
 
 ## Core Types
 
@@ -38,7 +39,7 @@ let client = Qdrant::from_url("http://localhost:6334")
 
 ### Creating a Collection
 
-Qdrant organises data into [collections](https://qdrant.tech/documentation/concepts/collections/) of [points](https://qdrant.tech/documentation/concepts/points/).
+Qdrant organises data into [collections][collections] of [points][points].
 
 ```rust
 use qdrant_client::qdrant::{CreateCollectionBuilder, Distance, VectorParamsBuilder};
@@ -52,6 +53,7 @@ let response = client
 ```
 
 `VectorParamsBuilder::new` takes:
+
 - Vector dimensionality (e.g., `512`)
 - `Distance` metric for similarity measurement (`Cosine`, `Euclid`, `Dot`)
 
@@ -108,6 +110,7 @@ pub struct Payload(/* private fields */);
 JSON-like metadata attached to points. Supports filtering during vector search.
 
 **Methods:**
+
 - `new()` — construct empty payload
 - `from(HashMap)` — construct from hash map
 - `insert(key, value)` — insert/replace value at key
@@ -155,6 +158,7 @@ pub struct Qdrant {
 ```
 
 **Operation categories:**
+
 - Collection operations — manage collections, aliases, cluster configuration
 - Point operations — manage points and vectors
 - Payload operations — manage point payloads
@@ -165,6 +169,7 @@ pub struct Qdrant {
 - Shard key operations — manage shard keys
 
 **Common methods:**
+
 - `create_collection()` — create a new collection
 - `collection_info()` — get collection info
 - `list_collections()` — list all collections
@@ -189,24 +194,32 @@ pub enum QdrantError {
 
 ## Traits
 
-- `serde::Deserialize` / `serde::Serialize` — required for payload conversion with the `serde` feature
+- `serde::Deserialize` / `serde::Serialize` — required for payload conversion
+  with the `serde` feature
 
-No custom traits needed for defining points. The API uses builder patterns throughout.
+No custom traits are needed for defining points. The API uses builder patterns
+throughout.
 
-## Quick Start
+## Quick start
 
-1. **Connect** — `Qdrant::from_url("...").build()?`, optionally with API key and timeout
-2. **Create collection** — `CreateCollectionBuilder` + `VectorParamsBuilder` (name, vector size, distance metric)
+1. **Connect** — `Qdrant::from_url("...").build()?`, optionally with API key
+   and timeout
+2. **Create collection** — `CreateCollectionBuilder` + `VectorParamsBuilder`
+   (name, vector size, distance metric)
 3. **Upsert points** — `PointStruct` via `UpsertPointsBuilder`
 4. **Search** — `SearchPointsBuilder` with query vector and parameters
 5. **Handle payloads** — use `serde_json` conversions (with `serde` feature)
 6. **Handle errors** — match on `QdrantError` variants
 
-All operations are async and use builder patterns. For filtering, indexing, and snapshots, see the extended `Qdrant` client methods.
+All operations are async and use builder patterns. For filtering, indexing, and
+snapshots, consult the extended `Qdrant` client methods.
 
-## Further Reading
+## Further reading
 
-- [Collections](https://qdrant.tech/documentation/concepts/collections/)
-- [Points](https://qdrant.tech/documentation/concepts/points/)
+- [Collections][collections]
+- [Points][points]
 - [Payload](https://qdrant.tech/documentation/concepts/payload/)
 - [Search](https://qdrant.tech/documentation/concepts/search/)
+
+[collections]: https://qdrant.tech/documentation/concepts/collections/
+[points]: https://qdrant.tech/documentation/concepts/points/

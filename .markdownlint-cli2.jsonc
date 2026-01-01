@@ -8,7 +8,9 @@
       "tables": false,
       "headings": false
     },
-    "MD029": { "style": "ordered" }
+    "MD024": { "siblings_only": true },
+    "MD029": { "style": "ordered" },
+    "MD060": false
   },
   "ignores": ["**/.venv/**", ".node_modules/**", "**/node_modules/**", "**/target/**"]
 }
