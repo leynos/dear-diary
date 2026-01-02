@@ -1,0 +1,10 @@
+---
+source: crates/dear-diary/tests/e2e_server_tests.rs
+assertion_line: 60
+expression: snapshot_data
+---
+{
+  "has_instructions": true,
+  "has_tools": true,
+  "name": "dear-diary"
+}

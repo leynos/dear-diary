@@ -1,0 +1,10 @@
+target/
+**/*.rs.bk
+
+# Environment files with secrets
+.env
+.env.local
+.env.*.local
+
+# FastEmbed model cache (downloaded at runtime)
+.fastembed_cache/

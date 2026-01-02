@@ -1,0 +1,19 @@
+[package]
+name = "dear-diary-embeddings"
+description = "Embedding provider abstractions for Dear Diary MCP server"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+fastembed.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+
+[dev-dependencies]
+mockall.workspace = true
+rstest.workspace = true
+
+[lints]
+workspace = true

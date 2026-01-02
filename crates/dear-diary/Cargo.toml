@@ -1,0 +1,29 @@
+[package]
+name = "dear-diary"
+description = "MCP server for Qdrant vector database - semantic memory layer"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+dear-diary-config.workspace = true
+dear-diary-embeddings.workspace = true
+dear-diary-qdrant.workspace = true
+dear-diary-mcp.workspace = true
+tokio.workspace = true
+rmcp.workspace = true
+
+[dev-dependencies]
+dear-diary-qdrant = { workspace = true, features = ["test-utils"] }
+dotenvy.workspace = true
+insta.workspace = true
+mockall.workspace = true
+qdrant-client.workspace = true
+rstest.workspace = true
+rstest-bdd.workspace = true
+serde_json.workspace = true
+uuid.workspace = true
+
+[lints]
+workspace = true
