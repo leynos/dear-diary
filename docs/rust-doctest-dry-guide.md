@@ -78,13 +78,12 @@ documentation of internal, private APIs. This forces a bifurcation of
 documentation strategy. Public-facing documentation can be tied directly to
 working, tested code. Internal documentation for maintainers, which is equally
 vital for a project's health, cannot be verified with the same tools. Examples
-covering private functions must either be marked as
-
-`ignore`, forgoing the test guarantee, or be duplicated in separate unit tests,
-violating the "Don't Repeat Yourself" (DRY) principle.[^1] This reveals that
-`rustdoc`'s design implicitly prioritizes the integrity of the public contract
-over the convenience of a single, unified system for testable documentation of
-both public and private code.
+covering private functions must either be marked as `ignore`, forgoing the test
+guarantee, or be duplicated in separate unit tests, violating the "Don't Repeat
+Yourself" (DRY) principle.[^1] This reveals that `rustdoc`'s design implicitly
+prioritizes the integrity of the public contract over the convenience of a
+single, unified system for testable documentation of both public and private
+code.
 
 ## Authoring effective doctests: from basics to best practices
 
@@ -118,10 +117,9 @@ syntax. A reader can typically be expected to understand the mechanics of
 calling a function or instantiating a struct. A truly valuable example
 illustrates *why* and in *what context* an item should be used.[^9] It should
 tell a small story or solve a miniature problem that illuminates the item's
-purpose. For instance, an example for
-
-`String::clone()` should not just show `hello.clone();`, but should demonstrate
-a scenario where ownership rules necessitate creating a copy.[^9]
+purpose. For instance, an example for `String::clone()` should not just show
+`hello.clone();`, but should demonstrate a scenario where ownership rules
+necessitate creating a copy.[^9]
 
 To achieve this, examples must be clear, concise, and purposeful. Any code that
 directly relevant to the point being made—such as complex setup, boilerplate,
@@ -574,7 +572,6 @@ real-world challenges when working with doctests.
   limited or no autocompletion, real-time error checking, or refactoring
   support for code within a comment block.[^15] A common and effective workflow
   to mitigate this is to first write and debug the example as a standard
-
   `#[test]` function in a temporary file or test module. This allows the
   developer to leverage the full power of the IDE. Once the code is working
   correctly, it can be copied into the doc comment, and the necessary

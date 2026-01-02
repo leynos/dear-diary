@@ -164,3 +164,50 @@ async fn test_recent_deprecated_entries_visible_with_prefix(settings: Settings) 
         "Entry content should be present"
     );
 }
+
+/// Test that `qdrant_store` rejects requests when server is in read-only mode.
+#[rstest]
+#[tokio::test]
+async fn test_read_only_mode_rejects_store(mut settings: Settings) {
+    settings.qdrant.read_only = true;
+    let connector = MockQdrantConnector::new();
+
+    let server = DiaryServer::new(connector, settings);
+    let request = crate::tools::StoreRequest {
+        information: "Test content".to_owned(),
+        metadata: None,
+        collection_name: None,
+    };
+
+    let result = server.qdrant_store(Parameters(request)).await;
+
+    let err = result.expect_err("Store should fail in read-only mode");
+    assert_eq!(
+        err.code,
+        rmcp::model::ErrorCode(-32600),
+        "Error code should be INVALID_REQUEST"
+    );
+}
+
+/// Test that `qdrant_deprecate` rejects requests when server is in read-only mode.
+#[rstest]
+#[tokio::test]
+async fn test_read_only_mode_rejects_deprecate(mut settings: Settings) {
+    settings.qdrant.read_only = true;
+    let connector = MockQdrantConnector::new();
+
+    let server = DiaryServer::new(connector, settings);
+    let request = crate::tools::DeprecateRequest {
+        query: "test query".to_owned(),
+        collection_name: None,
+    };
+
+    let result = server.qdrant_deprecate(Parameters(request)).await;
+
+    let err = result.expect_err("Deprecate should fail in read-only mode");
+    assert_eq!(
+        err.code,
+        rmcp::model::ErrorCode(-32600),
+        "Error code should be INVALID_REQUEST"
+    );
+}

@@ -83,7 +83,7 @@ Create a `.env` file in the project root:
 
 ```plaintext
 QDRANT_URL=https://abc123.eu-west-1-0.aws.cloud.qdrant.io:6334
-QDRANT_API_KEY=dd_test_k7xN9pQ2mR4sT6vW8yZ0aB3cD5eF1gH2iJ4kL6mN8oP0q
+QDRANT_API_KEY=your_qdrant_api_key_here
 COLLECTION_NAME=my-memories
 EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
 QDRANT_SEARCH_LIMIT=10
@@ -95,7 +95,7 @@ When connecting to Qdrant Cloud, use port 6334 for gRPC connections:
 
 ```plaintext
 QDRANT_URL=https://abc123.eu-west-1-0.aws.cloud.qdrant.io:6334
-QDRANT_API_KEY=eyJhbGciOiJIUzI1NiIs...
+QDRANT_API_KEY=your_cloud_api_key_from_qdrant_console
 ```
 
 ## Running the server
@@ -124,7 +124,7 @@ On macOS, edit
       "command": "/path/to/dear-diary",
       "env": {
         "QDRANT_URL": "https://xyz789.eu-west-1-0.aws.cloud.qdrant.io:6334",
-        "QDRANT_API_KEY": "dd_prod_a1B2c3D4e5F6g7H8i9J0kL1mN2oP3qR4sT5uV6wX7yZ8",
+        "QDRANT_API_KEY": "your_production_api_key_here",
         "COLLECTION_NAME": "claude-memories"
       }
     }
@@ -403,11 +403,59 @@ If the embedding model fails to download, check network connectivity and ensure
 the cache directory is writable. The default cache location is
 `.fastembed_cache/` in the working directory.
 
+## Programmatic API
+
+Dear Diary can be used as a library in addition to being run as a standalone
+MCP server. The following types are exported from the `dear_diary_mcp` crate:
+
+### `DiaryServer`
+
+The main MCP server type. Create an instance with a Qdrant connector and
+settings:
+
+```rust,ignore
+use dear_diary_mcp::DiaryServer;
+use dear_diary_config::Settings;
+use dear_diary_qdrant::QdrantConnectorImpl;
+use rmcp::ServiceExt;
+
+let settings = Settings::from_env()?;
+let connector = QdrantConnectorImpl::new(...)?;
+let server = DiaryServer::new(connector, settings);
+server.serve(rmcp::transport::stdio()).await?;
+```
+
+### `McpServerError`
+
+Error type for server operations, including:
+
+- `MissingCollectionName` — No collection specified and no default configured
+- `InvalidFilter` — Filter parsing failed or filters not enabled
+- `ConnectionError` — Failed to connect to Qdrant
+- `StoreError` — Failed to store entry
+- `SearchError` — Failed to search entries
+
+### Request types
+
+- `StoreRequest` — Parameters for the `qdrant_store` tool
+- `FindRequest` — Parameters for the `qdrant_find` tool
+
+## Known limitations
+
+### Arbitrary filter parsing
+
+The `filter` parameter on `qdrant_find` has limited support. Whilst the
+`allow_arbitrary_filter` configuration option exists, arbitrary JSON filter
+parsing is not yet implemented. This limitation arises because Qdrant's
+protobuf `Filter` type does not implement serde traits, requiring manual
+construction from JSON structures. Currently, providing a filter value returns
+an error indicating the feature is not yet available.
+
 ______________________________________________________________________
 
 [^1]: Either `QDRANT_URL` or `QDRANT_LOCAL_PATH` must be set, but not both.
 
 [^2]: Arbitrary filter support requires additional configuration and is not
-    enabled by default.
+    enabled by default. See "Known limitations" for details.
 
 [fastembed]: https://github.com/Qdrant/fastembed

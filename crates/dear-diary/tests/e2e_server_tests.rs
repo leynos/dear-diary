@@ -95,5 +95,8 @@ fn test_read_only_mode_settings(read_only_context: ServerTestContext) {
     );
 
     let info = read_only_context.server.get_info();
-    assert!(info.capabilities.tools.is_some());
+    assert!(
+        info.capabilities.tools.is_some(),
+        "Server should have tools enabled even in read-only mode"
+    );
 }

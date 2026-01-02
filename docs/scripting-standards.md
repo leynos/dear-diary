@@ -142,8 +142,8 @@ if __name__ == "__main__":
 
 ### Guidance
 
-- Parameter names must be descriptive and stable. Where a legacy flag name
-  must remain available, add an alias:
+- Use descriptive and stable parameter names. Where a legacy flag name must
+  remain available, add an alias:
 
   ```python
   package_name: Annotated[str | None, Parameter(aliases=["--name"])] = None
