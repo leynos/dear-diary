@@ -788,6 +788,7 @@ dependencies = [
 name = "dear-diary-qdrant"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "dear-diary-embeddings",
  "mockall",
  "qdrant-client",

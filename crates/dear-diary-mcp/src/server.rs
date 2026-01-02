@@ -291,7 +291,7 @@ mod tests {
     use rstest::{fixture, rstest};
 
     #[fixture]
-    fn settings() -> Settings {
+    pub(super) fn settings() -> Settings {
         Settings {
             tools: ToolSettings::default(),
             qdrant: QdrantSettings {
@@ -344,3 +344,7 @@ mod tests {
         assert!(result.is_err());
     }
 }
+
+#[cfg(test)]
+#[path = "server_tests.rs"]
+mod server_tests;

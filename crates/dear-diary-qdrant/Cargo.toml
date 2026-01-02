@@ -3,7 +3,6 @@ name = "dear-diary-qdrant"
 description = "Qdrant connector for Dear Diary MCP server"
 version.workspace = true
 edition.workspace = true
-rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 
@@ -12,6 +11,7 @@ repository.workspace = true
 test-utils = ["dep:mockall"]
 
 [dependencies]
+async-trait.workspace = true
 dear-diary-embeddings.workspace = true
 mockall = { workspace = true, optional = true }
 qdrant-client.workspace = true

@@ -3,7 +3,6 @@ name = "dear-diary"
 description = "MCP server for Qdrant vector database - semantic memory layer"
 version.workspace = true
 edition.workspace = true
-rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 

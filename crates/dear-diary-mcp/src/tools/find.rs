@@ -19,9 +19,10 @@ pub struct FindRequest {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub collection_name: Option<String>,
 
-    /// Optional filter to apply to the search results.
-    /// Only available if `allow_arbitrary_filter` is enabled.
-    #[schemars(description = "Optional filter to apply to the search (JSON object)")]
+    /// Reserved for future filter support.
+    ///
+    /// **Note**: Arbitrary filter parsing is not yet implemented.
+    #[schemars(description = "Reserved for future filter support (not yet implemented)")]
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub filter: Option<Value>,
 

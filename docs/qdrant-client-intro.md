@@ -5,24 +5,24 @@ database. Enables vector search, collection management, and payload operations.
 
 ## Core Types
 
-| Type | Purpose |
-|------|---------|
-| `Qdrant` | Main API client for server communication. Handles collection, point, search, and payload operations. |
-| `Payload` | JSON-like metadata attached to points. Converts to/from `serde_json` objects (with `serde` feature). |
-| `QdrantError` | Error enum covering connection issues, (de)serialization failures, and API errors. |
-| `PointStruct` | A point: ID + vector + optional payload. |
-| `CreateCollectionBuilder` | Builder for collection creation. |
-| `VectorParamsBuilder` | Configures vector size and distance metric. |
-| `UpsertPointsBuilder` | Builder for batch or single upsert operations. |
-| `SearchPointsBuilder` | Builder for search queries. |
+| Type                      | Purpose                                                                                              |
+| ------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `Qdrant`                  | Main API client for server communication. Handles collection, point, search, and payload operations. |
+| `Payload`                 | JSON-like metadata attached to points. Converts to/from `serde_json` objects (with `serde` feature). |
+| `QdrantError`             | Error enum covering connection issues, (de)serialization failures, and API errors.                   |
+| `PointStruct`             | A point: ID + vector + optional payload.                                                             |
+| `CreateCollectionBuilder` | Builder for collection creation.                                                                     |
+| `VectorParamsBuilder`     | Configures vector size and distance metric.                                                          |
+| `UpsertPointsBuilder`     | Builder for batch or single upsert operations.                                                       |
+| `SearchPointsBuilder`     | Builder for search queries.                                                                          |
 
 ## Modules
 
-| Module | Purpose |
-|--------|---------|
-| `config` | Client configuration |
-| `qdrant` | API types |
-| `deser` | Deserialize into any serde type |
+| Module   | Purpose                         |
+| -------- | ------------------------------- |
+| `config` | Client configuration            |
+| `qdrant` | API types                       |
+| `deser`  | Deserialize into any serde type |
 
 ## Usage Patterns
 
@@ -97,7 +97,8 @@ let response = client.search_points(search_request).await?;
 ```
 
 - `.with_payload(true)` — include full payload in results
-- `.filter()` — apply a `Filter` to constrain results (see [`Filter` docs](https://qdrant.tech/documentation/concepts/search/))
+- `.filter()` — apply a `Filter` to constrain results (see
+  [`Filter` docs](https://qdrant.tech/documentation/concepts/search/))
 
 ## Key Types Reference
 

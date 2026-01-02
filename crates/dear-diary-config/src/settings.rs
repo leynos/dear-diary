@@ -77,7 +77,12 @@ pub struct QdrantSettings {
     #[serde(default)]
     pub filterable_fields: Vec<FilterableField>,
 
-    /// Whether to allow arbitrary filter expressions in search queries.
+    /// Reserved for future arbitrary filter support.
+    ///
+    /// **Note**: This setting is not yet implemented. The Qdrant protobuf `Filter`
+    /// type does not implement serde traits, so JSON filter parsing requires
+    /// manual construction. Setting this to `true` will currently result in an
+    /// error when a filter is provided.
     #[serde(default)]
     pub allow_arbitrary_filter: bool,
 }
@@ -98,18 +103,29 @@ impl Default for QdrantSettings {
 }
 
 impl QdrantSettings {
+    /// Returns true if both connection modes are configured.
+    const fn has_conflicting_modes(&self) -> bool {
+        self.qdrant_url.is_some() && self.qdrant_local_path.is_some()
+    }
+
+    /// Returns true if neither connection mode is configured.
+    const fn has_no_connection_mode(&self) -> bool {
+        self.qdrant_url.is_none() && self.qdrant_local_path.is_none()
+    }
+
     /// Validates that exactly one connection mode is specified.
     ///
     /// # Errors
     ///
     /// Returns an error if both or neither of `qdrant_url` and `qdrant_local_path` are set.
     pub const fn validate(&self) -> Result<(), ConfigError> {
-        // Use tuple matching to check both/neither/one of the connection options
-        match (self.qdrant_url.is_some(), self.qdrant_local_path.is_some()) {
-            (true, true) => Err(ConfigError::ConflictingConnectionModes),
-            (false, false) => Err(ConfigError::MissingConnectionConfig),
-            _ => Ok(()),
+        if self.has_conflicting_modes() {
+            return Err(ConfigError::ConflictingConnectionModes);
         }
+        if self.has_no_connection_mode() {
+            return Err(ConfigError::MissingConnectionConfig);
+        }
+        Ok(())
     }
 
     /// Returns a map of filterable field names to their definitions.

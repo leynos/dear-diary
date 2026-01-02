@@ -1,9 +1,9 @@
 //! Qdrant connector trait and implementation.
 
 use std::sync::Arc;
-
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use async_trait::async_trait;
 use qdrant_client::qdrant::{
     CreateCollectionBuilder, Distance, PointStruct, PointsIdsList, SearchPointsBuilder,
     SetPayloadPointsBuilder, UpsertPointsBuilder, VectorParamsBuilder, VectorsConfig,
@@ -23,6 +23,7 @@ use mockall::automock;
 ///
 /// This trait abstracts the Qdrant client to allow for mocking in tests.
 #[cfg_attr(any(test, feature = "test-utils"), automock)]
+#[async_trait]
 pub trait QdrantConnector: Send + Sync {
     /// Stores an entry in the specified collection.
     ///
@@ -34,11 +35,7 @@ pub trait QdrantConnector: Send + Sync {
     /// # Errors
     ///
     /// Returns an error if the storage operation fails.
-    fn store(
-        &self,
-        entry: &Entry,
-        collection_name: &str,
-    ) -> impl std::future::Future<Output = Result<(), QdrantError>> + Send;
+    async fn store(&self, entry: &Entry, collection_name: &str) -> Result<(), QdrantError>;
 
     /// Searches for entries matching the query.
     ///
@@ -50,11 +47,11 @@ pub trait QdrantConnector: Send + Sync {
     /// # Errors
     ///
     /// Returns an error if the search operation fails.
-    fn search(
+    async fn search(
         &self,
         search_query: &SearchQuery,
         collection_name: &str,
-    ) -> impl std::future::Future<Output = Result<Vec<SearchResult>, QdrantError>> + Send;
+    ) -> Result<Vec<SearchResult>, QdrantError>;
 
     /// Checks if a collection exists.
     ///
@@ -65,10 +62,7 @@ pub trait QdrantConnector: Send + Sync {
     /// # Errors
     ///
     /// Returns an error if the check fails.
-    fn collection_exists(
-        &self,
-        collection_name: &str,
-    ) -> impl std::future::Future<Output = Result<bool, QdrantError>> + Send;
+    async fn collection_exists(&self, collection_name: &str) -> Result<bool, QdrantError>;
 
     /// Marks an entry as deprecated by setting its `deprecated_at` timestamp.
     ///
@@ -80,11 +74,7 @@ pub trait QdrantConnector: Send + Sync {
     /// # Errors
     ///
     /// Returns an error if the deprecation operation fails.
-    fn deprecate(
-        &self,
-        point_id: &str,
-        collection_name: &str,
-    ) -> impl std::future::Future<Output = Result<(), QdrantError>> + Send;
+    async fn deprecate(&self, point_id: &str, collection_name: &str) -> Result<(), QdrantError>;
 }
 
 /// Implementation of [`QdrantConnector`] using the Qdrant client.
@@ -188,7 +178,6 @@ impl<E: EmbeddingProvider> QdrantConnectorImpl<E> {
 
         if !exists {
             let vector_size = self.embedding_provider.vector_size();
-            let vector_name = self.embedding_provider.vector_name();
 
             let vectors_config = VectorsConfig::from(VectorParamsBuilder::new(
                 vector_size.try_into().map_err(|_| {
@@ -203,17 +192,13 @@ impl<E: EmbeddingProvider> QdrantConnectorImpl<E> {
                 )
                 .await
                 .map_err(|e| QdrantError::CreateCollectionError(e.to_string()))?;
-
-            // Note: The vector_name is used when upserting points, but collection
-            // creation with VectorsConfig creates a default unnamed vector.
-            // If we need named vectors, we'd need to adjust the collection creation.
-            let _ = vector_name; // Acknowledge unused for now
         }
 
         Ok(())
     }
 }
 
+#[async_trait]
 impl<E: EmbeddingProvider + 'static> QdrantConnector for QdrantConnectorImpl<E> {
     async fn store(&self, entry: &Entry, collection_name: &str) -> Result<(), QdrantError> {
         self.ensure_collection_exists(collection_name).await?;

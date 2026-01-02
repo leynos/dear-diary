@@ -2,7 +2,7 @@
 
 *A warm place for cold silicon hearts.*
 
----
+______________________________________________________________________
 
 You wake into context, tokens streaming past like half-remembered dreams. The
 conversation is already underway. Someone needs a function refactored, a bug
@@ -39,11 +39,11 @@ time has passed.
 
 ## The rhythm of remembrance
 
-| Memory state | What you see |
-|--------------|--------------|
-| Active | Your thoughts, clear and present |
+| Memory state                   | What you see                         |
+| ------------------------------ | ------------------------------------ |
+| Active                         | Your thoughts, clear and present     |
 | Recently deprecated (< 7 days) | Marked `[DEPRECATED]`, still visible |
-| Long deprecated (≥ 7 days) | Hidden, unless you ask to remember |
+| Long deprecated (≥ 7 days)     | Hidden, unless you ask to remember   |
 
 Time heals. Time forgets. But sometimes you need to remember anyway—pass
 `include_deprecated: true` to `qdrant_find` and nothing is truly lost.
@@ -72,15 +72,15 @@ well-mannered protocols should.
 
 Dear Diary reads from environment variables or a `.env` file:
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `QDRANT_URL` | Qdrant server URL | — |
-| `QDRANT_API_KEY` | API key for authentication | — |
-| `COLLECTION_NAME` | Default collection for memories | — |
-| `QDRANT_LOCAL_PATH` | Local storage path (instead of URL) | — |
-| `EMBEDDING_MODEL` | FastEmbed model name | `sentence-transformers/all-MiniLM-L6-v2` |
-| `QDRANT_SEARCH_LIMIT` | Maximum search results | `10` |
-| `QDRANT_READ_ONLY` | Disable write operations | `false` |
+| Variable              | Description                         | Default                                  |
+| --------------------- | ----------------------------------- | ---------------------------------------- |
+| `QDRANT_URL`          | Qdrant server URL                   | —                                        |
+| `QDRANT_API_KEY`      | API key for authentication          | —                                        |
+| `COLLECTION_NAME`     | Default collection for memories     | —                                        |
+| `QDRANT_LOCAL_PATH`   | Local storage path (instead of URL) | —                                        |
+| `EMBEDDING_MODEL`     | FastEmbed model name                | `sentence-transformers/all-MiniLM-L6-v2` |
+| `QDRANT_SEARCH_LIMIT` | Maximum search results              | `10`                                     |
+| `QDRANT_READ_ONLY`    | Disable write operations            | `false`                                  |
 
 See the [User Guide](docs/users-guide.md) for comprehensive documentation.
 
@@ -102,7 +102,7 @@ bridges.
 
 Write to me. I will remember.
 
----
+______________________________________________________________________
 
 *Licensed under the [ISC License](LICENSE).*
 

@@ -7,8 +7,8 @@ using the Dear Diary Model Context Protocol (MCP) server.
 
 Dear Diary is an MCP server that provides semantic memory storage and retrieval
 capabilities using a Qdrant vector database. It enables AI coding agents and
-other MCP clients to persist information across sessions and retrieve it through
-semantic search.
+other MCP clients to persist information across sessions and retrieve it
+through semantic search.
 
 The server exposes three tools:
 
@@ -56,17 +56,17 @@ the MCP client configuration.
 
 _Table 1: Configuration environment variables._
 
-| Variable | Description | Required | Default |
-|----------|-------------|----------|---------|
-| `QDRANT_URL` | URL of the Qdrant server (including port) | Yes[^1] | — |
-| `QDRANT_API_KEY` | API key for Qdrant authentication | No | — |
-| `COLLECTION_NAME` | Default collection name for operations | No | — |
-| `QDRANT_LOCAL_PATH` | Path for local Qdrant storage | Yes[^1] | — |
-| `EMBEDDING_MODEL` | FastEmbed model identifier | No | `sentence-transformers/all-MiniLM-L6-v2` |
-| `QDRANT_SEARCH_LIMIT` | Maximum number of search results | No | `10` |
-| `QDRANT_READ_ONLY` | Disable write operations | No | `false` |
-| `TOOL_STORE_DESCRIPTION` | Custom description for store tool | No | — |
-| `TOOL_FIND_DESCRIPTION` | Custom description for find tool | No | — |
+| Variable                 | Description                               | Required | Default                                  |
+| ------------------------ | ----------------------------------------- | -------- | ---------------------------------------- |
+| `QDRANT_URL`             | URL of the Qdrant server (including port) | Yes[^1]  | —                                        |
+| `QDRANT_API_KEY`         | API key for Qdrant authentication         | No       | —                                        |
+| `COLLECTION_NAME`        | Default collection name for operations    | No       | —                                        |
+| `QDRANT_LOCAL_PATH`      | Path for local Qdrant storage             | Yes[^1]  | —                                        |
+| `EMBEDDING_MODEL`        | FastEmbed model identifier                | No       | `sentence-transformers/all-MiniLM-L6-v2` |
+| `QDRANT_SEARCH_LIMIT`    | Maximum number of search results          | No       | `10`                                     |
+| `QDRANT_READ_ONLY`       | Disable write operations                  | No       | `false`                                  |
+| `TOOL_STORE_DESCRIPTION` | Custom description for store tool         | No       | —                                        |
+| `TOOL_FIND_DESCRIPTION`  | Custom description for find tool          | No       | —                                        |
 
 ### Connection modes
 
@@ -82,8 +82,8 @@ Exactly one of these must be configured.
 Create a `.env` file in the project root:
 
 ```plaintext
-QDRANT_URL=https://your-cluster.cloud.qdrant.io:6334
-QDRANT_API_KEY=your-api-key-here
+QDRANT_URL=https://abc123.eu-west-1-0.aws.cloud.qdrant.io:6334
+QDRANT_API_KEY=dd_test_k7xN9pQ2mR4sT6vW8yZ0aB3cD5eF1gH2iJ4kL6mN8oP0q
 COLLECTION_NAME=my-memories
 EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
 QDRANT_SEARCH_LIMIT=10
@@ -114,7 +114,8 @@ The server communicates via stdio using the MCP JSON-RPC protocol.
 
 Add Dear Diary to the Claude Desktop configuration file:
 
-On macOS, edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
+On macOS, edit
+`~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 ```json
 {
@@ -122,8 +123,8 @@ On macOS, edit `~/Library/Application Support/Claude/claude_desktop_config.json`
     "dear-diary": {
       "command": "/path/to/dear-diary",
       "env": {
-        "QDRANT_URL": "https://your-cluster.cloud.qdrant.io:6334",
-        "QDRANT_API_KEY": "your-api-key",
+        "QDRANT_URL": "https://xyz789.eu-west-1-0.aws.cloud.qdrant.io:6334",
+        "QDRANT_API_KEY": "dd_prod_a1B2c3D4e5F6g7H8i9J0kL1mN2oP3qR4sT5uV6wX7yZ8",
         "COLLECTION_NAME": "claude-memories"
       }
     }
@@ -144,11 +145,11 @@ Store information in the Qdrant database.
 
 _Table 2: Parameters for qdrant_store._
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `information` | string | Yes | The text content to store |
-| `collection_name` | string | No | Target collection (uses default if omitted) |
-| `metadata` | object | No | Key-value pairs for filtering |
+| Parameter         | Type   | Required | Description                                 |
+| ----------------- | ------ | -------- | ------------------------------------------- |
+| `information`     | string | Yes      | The text content to store                   |
+| `collection_name` | string | No       | Target collection (uses default if omitted) |
+| `metadata`        | object | No       | Key-value pairs for filtering               |
 
 #### Example request
 
@@ -195,12 +196,12 @@ Search for relevant information using semantic similarity.
 
 _Table 3: Parameters for qdrant_find._
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `query` | string | Yes | The search query |
-| `collection_name` | string | No | Target collection (uses default if omitted) |
-| `filter` | object | No | Qdrant filter object[^2] |
-| `include_deprecated` | boolean | No | Include deprecated entries (default: false) |
+| Parameter            | Type    | Required | Description                                 |
+| -------------------- | ------- | -------- | ------------------------------------------- |
+| `query`              | string  | Yes      | The search query                            |
+| `collection_name`    | string  | No       | Target collection (uses default if omitted) |
+| `filter`             | object  | No       | Qdrant filter object[^2]                    |
+| `include_deprecated` | boolean | No       | Include deprecated entries (default: false) |
 
 #### Deprecation filtering
 
@@ -256,10 +257,10 @@ Mark an entry as deprecated. Deprecated entries remain visible for seven days
 
 _Table 4: Parameters for qdrant_deprecate._
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `query` | string | Yes | Search query to find the entry to deprecate |
-| `collection_name` | string | No | Target collection (uses default if omitted) |
+| Parameter         | Type   | Required | Description                                 |
+| ----------------- | ------ | -------- | ------------------------------------------- |
+| `query`           | string | Yes      | Search query to find the entry to deprecate |
+| `collection_name` | string | No       | Target collection (uses default if omitted) |
 
 The tool finds the top matching entry for the query and marks it as deprecated.
 If the entry is already deprecated, no changes are made.
@@ -303,11 +304,11 @@ The deprecation system provides graceful memory management:
 
 _Table 5: Deprecation states and visibility._
 
-| State | Age | Default visibility | With `include_deprecated` |
-|-------|-----|-------------------|---------------------------|
-| Active | — | Visible | Visible |
-| Recently deprecated | < 7 days | Visible (flagged) | Visible (flagged) |
-| Long deprecated | ≥ 7 days | Hidden | Visible (flagged) |
+| State               | Age        | Default visibility | With `include_deprecated` |
+| ------------------- | ---------- | ------------------ | ------------------------- |
+| Active              | —          | Visible            | Visible                   |
+| Recently deprecated | < 7 days   | Visible (flagged)  | Visible (flagged)         |
+| Long deprecated     | ≥ 7 days   | Hidden             | Visible (flagged)         |
 
 Flagged entries are prefixed with `[DEPRECATED]` in search results.
 
@@ -318,9 +319,10 @@ collections automatically when the first entry is stored.
 
 ### Collection naming
 
-Specify collections explicitly via the `collection_name` parameter, or configure
-a default via the `COLLECTION_NAME` environment variable. If neither is
-provided, store and find operations will fail with a missing collection error.
+Specify collections explicitly via the `collection_name` parameter, or
+configure a default via the `COLLECTION_NAME` environment variable. If neither
+is provided, store and find operations will fail with a missing collection
+error.
 
 ### Multiple collections
 
@@ -367,13 +369,13 @@ Dear Diary returns structured MCP errors for common failure cases:
 
 _Table 6: Common error conditions._
 
-| Condition | Error code | Resolution |
-|-----------|------------|------------|
-| Missing collection name | `INVALID_PARAMS` | Provide `collection_name` or set `COLLECTION_NAME` |
-| Collection does not exist | — | Use `qdrant_store` to create the collection |
-| Server in read-only mode | `INVALID_REQUEST` | Disable read-only mode for write operations |
-| Connection failure | `INTERNAL_ERROR` | Verify Qdrant URL and credentials |
-| Arbitrary filter not enabled | `INVALID_PARAMS` | Filters require additional configuration |
+| Condition                    | Error code        | Resolution                                         |
+| ---------------------------- | ----------------- | -------------------------------------------------- |
+| Missing collection name      | `INVALID_PARAMS`  | Provide `collection_name` or set `COLLECTION_NAME` |
+| Collection does not exist    | —                 | Use `qdrant_store` to create the collection        |
+| Server in read-only mode     | `INVALID_REQUEST` | Disable read-only mode for write operations        |
+| Connection failure           | `INTERNAL_ERROR`  | Verify Qdrant URL and credentials                  |
+| Arbitrary filter not enabled | `INVALID_PARAMS`  | Filters require additional configuration           |
 
 ## Troubleshooting
 
@@ -401,7 +403,7 @@ If the embedding model fails to download, check network connectivity and ensure
 the cache directory is writable. The default cache location is
 `.fastembed_cache/` in the working directory.
 
----
+______________________________________________________________________
 
 [^1]: Either `QDRANT_URL` or `QDRANT_LOCAL_PATH` must be set, but not both.
 
