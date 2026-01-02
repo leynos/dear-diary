@@ -60,6 +60,12 @@ impl<C: QdrantConnector + 'static> DiaryServer<C> {
     /// Note: Arbitrary filter support is limited. Currently, only filterable
     /// fields are properly supported. Raw JSON filter parsing is not available
     /// because the Qdrant protobuf Filter type doesn't implement serde traits.
+    ///
+    /// See [GitHub issue #2][filter-issue] for implementation tracking and the
+    /// [user guide][user-guide-filters] for current workarounds.
+    ///
+    /// [filter-issue]: https://github.com/leynos/dear-diary/issues/2
+    /// [user-guide-filters]: https://github.com/leynos/dear-diary/blob/main/docs/users-guide.md#arbitrary-filter-parsing
     fn parse_filter(&self, filter: Option<Value>) -> Result<Option<Filter>, McpServerError> {
         let Some(_filter_value) = filter else {
             return Ok(None);
@@ -71,10 +77,10 @@ impl<C: QdrantConnector + 'static> DiaryServer<C> {
             ));
         }
 
-        // TODO: Implement proper filter parsing from JSON
+        // Arbitrary JSON filter parsing is not yet implemented.
         // The Qdrant Filter protobuf type doesn't implement serde Deserialize,
-        // so we need to manually construct filters from the JSON structure.
-        // For now, return an error indicating this is not yet implemented.
+        // so we would need to manually construct filters from the JSON structure.
+        // Tracked in: https://github.com/leynos/dear-diary/issues/2
         Err(McpServerError::InvalidFilter(
             "Arbitrary JSON filter parsing is not yet implemented".to_owned(),
         ))

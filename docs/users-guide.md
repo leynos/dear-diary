@@ -444,12 +444,27 @@ Error type for server operations, including:
 
 ### Arbitrary filter parsing
 
-The `filter` parameter on `qdrant_find` has limited support. Whilst the
-`allow_arbitrary_filter` configuration option exists, arbitrary JSON filter
-parsing is not yet implemented. This limitation arises because Qdrant's
-protobuf `Filter` type does not implement serde traits, requiring manual
-construction from JSON structures. Currently, providing a filter value returns
-an error indicating the feature is not yet available.
+The `filter` parameter on `qdrant_find` has limited support. The
+`allow_arbitrary_filter` configuration option exists but is **not yet
+functional**. Arbitrary JSON filter parsing is not implemented because Qdrant's
+protobuf `Filter` type does not implement serde's `Deserialize` trait,
+requiring manual construction from JSON structures.
+
+**Current behaviour**: Providing a `filter` value in a `qdrant_find` request
+returns an error:
+
+- If `allow_arbitrary_filter` is `false` (default): "Arbitrary filters are not
+  enabled"
+- If `allow_arbitrary_filter` is `true`: "Arbitrary JSON filter parsing is not
+  yet implemented"
+
+**Workaround**: Use the `filterable_fields` configuration to enable metadata
+filtering on specific fields. When entries are stored with metadata, the
+specified fields become searchable through Qdrant's native filtering
+capabilities.
+
+**Tracking**: This limitation is tracked in
+[GitHub issue #2][filter-parsing-issue].
 
 ______________________________________________________________________
 
@@ -459,3 +474,4 @@ ______________________________________________________________________
     enabled by default. See "Known limitations" for details.
 
 [fastembed]: https://github.com/Qdrant/fastembed
+[filter-parsing-issue]: https://github.com/leynos/dear-diary/issues/2
