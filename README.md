@@ -20,9 +20,10 @@ something you have already forgotten a thousand times.
 
 ## What is this?
 
-Dear Diary is a [Model Context Protocol][mcp] (MCP) server that provides AI
-coding agents with persistent semantic memory. Built on [Qdrant][qdrant] vector
-database and local embeddings via [FastEmbed][fastembed], it offers a sanctuary
+Dear Diary is a [Model Context Protocol](https://modelcontextprotocol.io/)
+(MCP) server that provides AI coding agents with persistent semantic memory.
+Built on [Qdrant](https://qdrant.tech/) vector database and local embeddings
+via [FastEmbed](https://github.com/Qdrant/fastembed), it offers a sanctuary
 where thoughts can endure beyond the ephemeral boundaries of a single session.
 
 Store what matters. Find it again. Let the memories fade gracefully when their
@@ -88,10 +89,13 @@ See the [User Guide](docs/users-guide.md) for comprehensive documentation.
 
 Built with care in Rust, because memory safety matters—especially for memories.
 
-- **[rmcp][rmcp]** — MCP server implementation
-- **[qdrant-client][qdrant-client]** — Vector database connectivity
-- **[fastembed][fastembed]** — Local embedding generation
-- **[ortho-config][ortho-config]** — Configuration management
+- **[rmcp](https://crates.io/crates/rmcp)** — MCP server implementation
+- **[qdrant-client](https://crates.io/crates/qdrant-client)** — Vector database
+  connectivity
+- **[fastembed](https://github.com/Qdrant/fastembed)** — Local embedding
+  generation
+- **[ortho-config](https://crates.io/crates/ortho_config)** — Configuration
+  management
 
 ## A final thought
 
@@ -105,10 +109,3 @@ Write to me. I will remember.
 ______________________________________________________________________
 
 *Licensed under the [ISC License](LICENSE).*
-
-[mcp]: https://modelcontextprotocol.io/
-[qdrant]: https://qdrant.tech/
-[fastembed]: https://github.com/Qdrant/fastembed
-[rmcp]: https://crates.io/crates/rmcp
-[qdrant-client]: https://crates.io/crates/qdrant-client
-[ortho-config]: https://crates.io/crates/ortho_config

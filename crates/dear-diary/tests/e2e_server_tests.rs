@@ -22,7 +22,10 @@ struct ServerTestContext {
 }
 
 /// Creates a server with the given test name and `read_only` setting.
-#[expect(clippy::expect_used, reason = "Test fixture setup may panic on failure")]
+#[expect(
+    clippy::expect_used,
+    reason = "Test fixture setup may panic on failure"
+)]
 fn create_server_context(test_name: &str, read_only: bool) -> ServerTestContext {
     let config = TestConfig::load();
     let collection_name = config.unique_collection_name(test_name);
