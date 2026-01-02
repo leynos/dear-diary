@@ -1,6 +1,5 @@
 //! Dear Diary MCP server implementation.
 
-use std::borrow::Cow;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -8,8 +7,7 @@ use qdrant_client::qdrant::Filter;
 use rmcp::handler::server::tool::ToolRouter;
 use rmcp::handler::server::wrapper::Parameters;
 use rmcp::model::{
-    CallToolResult, Content, ErrorCode, Implementation, ProtocolVersion, ServerCapabilities,
-    ServerInfo,
+    CallToolResult, Content, Implementation, ProtocolVersion, ServerCapabilities, ServerInfo,
 };
 use rmcp::{ErrorData as McpError, ServerHandler, tool, tool_handler, tool_router};
 use serde_json::Value;
@@ -17,11 +15,9 @@ use serde_json::Value;
 use dear_diary_config::Settings;
 use dear_diary_qdrant::{Entry, QdrantConnector, SearchQuery};
 
-use crate::error::McpServerError;
+use crate::deprecation::visibility as deprecation_visibility;
+use crate::error::{McpServerError, internal_error, invalid_params, read_only_error};
 use crate::tools::{DeprecateRequest, FindRequest, StoreRequest};
-
-/// Number of seconds in 7 days for deprecation threshold.
-const SEVEN_DAYS_SECS: i64 = 7 * 24 * 3600;
 
 /// The Dear Diary MCP server.
 ///
@@ -93,39 +89,23 @@ impl<C: QdrantConnector + 'static> DiaryServer<C> {
         &self,
         Parameters(request): Parameters<StoreRequest>,
     ) -> Result<CallToolResult, McpError> {
-        // Check if server is in read-only mode
         if self.settings.qdrant.read_only {
-            return Err(McpError {
-                code: ErrorCode::INVALID_REQUEST,
-                message: Cow::Borrowed("Server is in read-only mode"),
-                data: None,
-            });
+            return Err(read_only_error());
         }
 
-        // Resolve collection name
         let collection_name = self
             .resolve_collection_name(request.collection_name.as_deref())
-            .map_err(|e| McpError {
-                code: ErrorCode::INVALID_PARAMS,
-                message: Cow::Owned(e.to_string()),
-                data: None,
-            })?;
+            .map_err(invalid_params)?;
 
-        // Create entry
         let entry = match request.metadata {
             Some(metadata) => Entry::with_metadata(request.information, metadata),
             None => Entry::new(request.information),
         };
 
-        // Store in Qdrant
         self.connector
             .store(&entry, &collection_name)
             .await
-            .map_err(|e| McpError {
-                code: ErrorCode::INTERNAL_ERROR,
-                message: Cow::Owned(e.to_string()),
-                data: None,
-            })?;
+            .map_err(internal_error)?;
 
         Ok(CallToolResult::success(vec![Content::text(format!(
             "Successfully stored information in collection '{collection_name}'"
@@ -138,30 +118,17 @@ impl<C: QdrantConnector + 'static> DiaryServer<C> {
         &self,
         Parameters(request): Parameters<FindRequest>,
     ) -> Result<CallToolResult, McpError> {
-        // Resolve collection name
         let collection_name = self
             .resolve_collection_name(request.collection_name.as_deref())
-            .map_err(|e| McpError {
-                code: ErrorCode::INVALID_PARAMS,
-                message: Cow::Owned(e.to_string()),
-                data: None,
-            })?;
+            .map_err(invalid_params)?;
 
-        // Parse filter
-        let filter = self
-            .parse_filter(request.filter)
-            .map_err(|e: McpServerError| McpError {
-                code: ErrorCode::INVALID_PARAMS,
-                message: Cow::Owned(e.to_string()),
-                data: None,
-            })?;
+        let filter = self.parse_filter(request.filter).map_err(invalid_params)?;
 
-        // Check if collection exists before searching
         let collection_exists = self
             .connector
             .collection_exists(&collection_name)
             .await
-            .unwrap_or(false);
+            .map_err(|e| internal_error(format!("Failed to check collection existence: {e}")))?;
 
         if !collection_exists {
             return Ok(CallToolResult::success(vec![Content::text(format!(
@@ -170,7 +137,6 @@ impl<C: QdrantConnector + 'static> DiaryServer<C> {
             ))]));
         }
 
-        // Search in Qdrant
         let limit = u64::from(self.settings.qdrant.search_limit);
         let search_query = match filter {
             Some(f) => SearchQuery::with_filter(&request.query, limit, f),
@@ -180,11 +146,7 @@ impl<C: QdrantConnector + 'static> DiaryServer<C> {
             .connector
             .search(&search_query, &collection_name)
             .await
-            .map_err(|e| McpError {
-                code: ErrorCode::INTERNAL_ERROR,
-                message: Cow::Owned(e.to_string()),
-                data: None,
-            })?;
+            .map_err(internal_error)?;
 
         // Get current time for deprecation filtering
         #[expect(clippy::cast_possible_wrap, reason = "Unix timestamp fits in i64")]
@@ -197,20 +159,19 @@ impl<C: QdrantConnector + 'static> DiaryServer<C> {
         let content: Vec<Content> = results
             .into_iter()
             .filter_map(|result| {
-                // Check deprecation state
-                let (include, is_deprecated) = match result.deprecated_at {
-                    None => (true, false),
-                    Some(ts) if now - ts < SEVEN_DAYS_SECS => (true, true),
-                    Some(_) if request.include_deprecated => (true, true),
-                    Some(_) => (false, false), // Hidden: deprecated > 7 days
-                };
+                let visibility =
+                    deprecation_visibility(now, result.deprecated_at, request.include_deprecated);
 
-                if !include {
+                if !visibility.include {
                     return None;
                 }
 
                 // Format the entry text
-                let prefix = if is_deprecated { "[DEPRECATED] " } else { "" };
+                let prefix = if visibility.is_deprecated {
+                    "[DEPRECATED] "
+                } else {
+                    ""
+                };
                 let text = match result.entry.metadata {
                     Some(metadata) => {
                         let metadata_json = serde_json::to_string_pretty(&metadata)
@@ -243,30 +204,19 @@ impl<C: QdrantConnector + 'static> DiaryServer<C> {
         &self,
         Parameters(request): Parameters<DeprecateRequest>,
     ) -> Result<CallToolResult, McpError> {
-        // Check if server is in read-only mode
         if self.settings.qdrant.read_only {
-            return Err(McpError {
-                code: ErrorCode::INVALID_REQUEST,
-                message: Cow::Borrowed("Server is in read-only mode"),
-                data: None,
-            });
+            return Err(read_only_error());
         }
 
-        // Resolve collection name
         let collection_name = self
             .resolve_collection_name(request.collection_name.as_deref())
-            .map_err(|e| McpError {
-                code: ErrorCode::INVALID_PARAMS,
-                message: Cow::Owned(e.to_string()),
-                data: None,
-            })?;
+            .map_err(invalid_params)?;
 
-        // Check if collection exists
         let collection_exists = self
             .connector
             .collection_exists(&collection_name)
             .await
-            .unwrap_or(false);
+            .map_err(|e| internal_error(format!("Failed to check collection existence: {e}")))?;
 
         if !collection_exists {
             return Ok(CallToolResult::success(vec![Content::text(format!(
@@ -275,17 +225,12 @@ impl<C: QdrantConnector + 'static> DiaryServer<C> {
             ))]));
         }
 
-        // Search for the entry to deprecate (get top match)
         let search_query = SearchQuery::new(&request.query, 1);
         let results = self
             .connector
             .search(&search_query, &collection_name)
             .await
-            .map_err(|e| McpError {
-                code: ErrorCode::INTERNAL_ERROR,
-                message: Cow::Owned(e.to_string()),
-                data: None,
-            })?;
+            .map_err(internal_error)?;
 
         // Get the top result
         let Some(top_result) = results.into_iter().next() else {
@@ -303,15 +248,10 @@ impl<C: QdrantConnector + 'static> DiaryServer<C> {
             ))]));
         }
 
-        // Deprecate the entry
         self.connector
             .deprecate(&top_result.point_id, &collection_name)
             .await
-            .map_err(|e| McpError {
-                code: ErrorCode::INTERNAL_ERROR,
-                message: Cow::Owned(e.to_string()),
-                data: None,
-            })?;
+            .map_err(internal_error)?;
 
         Ok(CallToolResult::success(vec![Content::text(format!(
             "Successfully deprecated entry: {}",
@@ -348,9 +288,10 @@ mod tests {
     use super::*;
     use dear_diary_config::{DEFAULT_EMBEDDING_MODEL, QdrantSettings, ToolSettings};
     use dear_diary_qdrant::MockQdrantConnector;
-    use rstest::rstest;
+    use rstest::{fixture, rstest};
 
-    fn create_test_settings() -> Settings {
+    #[fixture]
+    fn settings() -> Settings {
         Settings {
             tools: ToolSettings::default(),
             qdrant: QdrantSettings {
@@ -368,16 +309,14 @@ mod tests {
     }
 
     #[rstest]
-    fn test_server_creation() {
+    fn test_server_creation(settings: Settings) {
         let connector = MockQdrantConnector::new();
-        let settings = create_test_settings();
         let _server = DiaryServer::new(connector, settings);
     }
 
     #[rstest]
-    fn test_resolve_collection_name_with_provided() {
+    fn test_resolve_collection_name_with_provided(settings: Settings) {
         let connector = MockQdrantConnector::new();
-        let settings = create_test_settings();
         let server = DiaryServer::new(connector, settings);
 
         let result = server.resolve_collection_name(Some("custom_collection"));
@@ -386,9 +325,8 @@ mod tests {
     }
 
     #[rstest]
-    fn test_resolve_collection_name_with_default() {
+    fn test_resolve_collection_name_with_default(settings: Settings) {
         let connector = MockQdrantConnector::new();
-        let settings = create_test_settings();
         let server = DiaryServer::new(connector, settings);
 
         let result = server.resolve_collection_name(None);
@@ -397,9 +335,8 @@ mod tests {
     }
 
     #[rstest]
-    fn test_resolve_collection_name_missing() {
+    fn test_resolve_collection_name_missing(mut settings: Settings) {
         let connector = MockQdrantConnector::new();
-        let mut settings = create_test_settings();
         settings.qdrant.collection_name = None;
         let server = DiaryServer::new(connector, settings);
 

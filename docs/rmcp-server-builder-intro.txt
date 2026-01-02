@@ -1,6 +1,6 @@
 This document has been cleaned and reformatted for clarity. Redundant sections have been merged, and "rustdoc" artifacts (like `[§]` or `[Source]`) have been removed.
 
-# rmcp-server-builder (vlatest)
+# rmcp-server-builder (latest)
 
 ## Summary
 `rmcp-server-builder` provides a composable, builder-pattern API for constructing **Model Capability Protocol (MCP)** servers. It allows you to assemble a server from individual capability providers, eliminating the need to manually implement and delegate methods for the `ServerHandler` trait.

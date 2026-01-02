@@ -133,28 +133,37 @@ impl<E: EmbeddingProvider> QdrantConnectorImpl<E> {
     ///
     /// # Arguments
     ///
-    /// * `path` - Path to the local storage directory.
+    /// * `path` - Path to the local storage directory, or `:memory:` for ephemeral storage.
+    ///   **Note**: The current Qdrant Rust client only supports HTTP/gRPC connections;
+    ///   true embedded storage requires `qdrant-client` compiled with the `local` feature
+    ///   (not yet available in stable releases). For now, `:memory:` falls back to
+    ///   `http://localhost:6334` and file paths are not functional.
     /// * `default_collection` - Optional default collection name.
     /// * `embedding_provider` - The embedding provider to use.
     ///
     /// # Errors
     ///
-    /// Returns an error if the local database cannot be initialized.
+    /// Returns an error if the local database cannot be initialised.
     pub fn new_local(
         path: &str,
         default_collection: Option<String>,
         embedding_provider: E,
     ) -> Result<Self, QdrantError> {
-        // For local mode, we use the special `:memory:` URL or file path
-        let client = if path == ":memory:" {
-            Qdrant::from_url("http://localhost:6334")
-                .build()
-                .map_err(|e| QdrantError::ConnectionError(e.to_string()))?
-        } else {
-            Qdrant::from_url(&format!("file://{path}"))
-                .build()
-                .map_err(|e| QdrantError::ConnectionError(e.to_string()))?
-        };
+        // TODO: The qdrant-client crate does not currently support embedded/local storage.
+        // The `file://` URL scheme is not recognised by the client builder.
+        // When embedded storage becomes available via a `local` feature, update this
+        // implementation accordingly. For now, `:memory:` falls back to localhost.
+        if path != ":memory:" {
+            return Err(QdrantError::ConnectionError(
+                "Local file storage is not yet supported. Use QDRANT_URL to connect to a \
+                 remote Qdrant server, or use ':memory:' with a local Qdrant instance."
+                    .to_owned(),
+            ));
+        }
+
+        let client = Qdrant::from_url("http://localhost:6334")
+            .build()
+            .map_err(|e| QdrantError::ConnectionError(e.to_string()))?;
 
         Ok(Self {
             client,

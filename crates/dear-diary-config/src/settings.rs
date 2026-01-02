@@ -50,7 +50,7 @@ fn default_find_description() -> String {
     DEFAULT_TOOL_FIND_DESCRIPTION.to_owned()
 }
 
-/// Qdrant connection and behavior settings.
+/// Qdrant connection and behaviour settings.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct QdrantSettings {
     /// URL of the Qdrant server (e.g., `http://localhost:6334`).
@@ -104,9 +104,10 @@ impl QdrantSettings {
     ///
     /// Returns an error if both or neither of `qdrant_url` and `qdrant_local_path` are set.
     pub const fn validate(&self) -> Result<(), ConfigError> {
-        match (&self.qdrant_url, &self.qdrant_local_path) {
-            (Some(_), Some(_)) => Err(ConfigError::ConflictingConnectionModes),
-            (None, None) => Err(ConfigError::MissingConnectionConfig),
+        // Use tuple matching to check both/neither/one of the connection options
+        match (self.qdrant_url.is_some(), self.qdrant_local_path.is_some()) {
+            (true, true) => Err(ConfigError::ConflictingConnectionModes),
+            (false, false) => Err(ConfigError::MissingConnectionConfig),
             _ => Ok(()),
         }
     }
@@ -240,13 +241,9 @@ impl Settings {
                     .ok()
                     .and_then(|s| s.parse().ok())
                     .unwrap_or(DEFAULT_SEARCH_LIMIT),
-                read_only: std::env::var("QDRANT_READ_ONLY")
-                    .ok()
-                    .is_some_and(|v| v == "true" || v == "1"),
+                read_only: env_var_bool("QDRANT_READ_ONLY"),
                 filterable_fields: Vec::new(),
-                allow_arbitrary_filter: std::env::var("QDRANT_ALLOW_ARBITRARY_FILTER")
-                    .ok()
-                    .is_some_and(|v| v == "true" || v == "1"),
+                allow_arbitrary_filter: env_var_bool("QDRANT_ALLOW_ARBITRARY_FILTER"),
             },
             embedding_model: std::env::var("EMBEDDING_MODEL")
                 .unwrap_or_else(|_| DEFAULT_EMBEDDING_MODEL.to_owned()),
@@ -259,6 +256,13 @@ impl Settings {
 
 fn default_embedding_model() -> String {
     DEFAULT_EMBEDDING_MODEL.to_owned()
+}
+
+/// Parses a boolean value from an environment variable.
+///
+/// Returns `true` if the variable is set to "true" or "1", `false` otherwise.
+fn env_var_bool(name: &str) -> bool {
+    std::env::var(name).is_ok_and(|v| v == "true" || v == "1")
 }
 
 #[cfg(test)]

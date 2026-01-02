@@ -1,6 +1,6 @@
 ---
-source: crates/dear-diary/tests/e2e_tests.rs
-assertion_line: 420
+source: crates/dear-diary/tests/e2e_server_tests.rs
+assertion_line: 60
 expression: snapshot_data
 ---
 {

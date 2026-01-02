@@ -1,3 +1,4 @@
 [toolchain]
+# Nightly required for Rust Edition 2024
 channel = "nightly-2025-12-10"
 components = ["rustfmt", "clippy"]

@@ -18,6 +18,7 @@
 //! server.serve(rmcp::transport::stdio()).await?;
 //! ```
 
+mod deprecation;
 mod error;
 mod server;
 mod tools;

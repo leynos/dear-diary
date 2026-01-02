@@ -1,5 +1,10 @@
 //! MCP server error types.
 
+use std::borrow::Cow;
+use std::fmt::Display;
+
+use rmcp::ErrorData as McpError;
+use rmcp::model::ErrorCode;
 use thiserror::Error;
 
 /// Errors that can occur during MCP server operations.
@@ -22,7 +27,34 @@ pub enum McpServerError {
     #[error("Invalid filter: {0}")]
     InvalidFilter(String),
 
-    /// Serialization error.
-    #[error("Serialization error: {0}")]
-    Serialization(String),
+    /// Serialisation error.
+    #[error("Serialisation error: {0}")]
+    Serialisation(String),
+}
+
+/// Creates an MCP error with `INVALID_PARAMS` code.
+pub(crate) fn invalid_params(e: impl Display) -> McpError {
+    McpError {
+        code: ErrorCode::INVALID_PARAMS,
+        message: Cow::Owned(e.to_string()),
+        data: None,
+    }
+}
+
+/// Creates an MCP error with `INTERNAL_ERROR` code.
+pub(crate) fn internal_error(e: impl Display) -> McpError {
+    McpError {
+        code: ErrorCode::INTERNAL_ERROR,
+        message: Cow::Owned(e.to_string()),
+        data: None,
+    }
+}
+
+/// Creates an MCP error for read-only mode.
+pub(crate) const fn read_only_error() -> McpError {
+    McpError {
+        code: ErrorCode::INVALID_REQUEST,
+        message: Cow::Borrowed("Server is in read-only mode"),
+        data: None,
+    }
 }

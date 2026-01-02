@@ -42,7 +42,7 @@ impl FastEmbedProvider {
         let model = TextEmbedding::try_new(
             InitOptions::new(embedding_model).with_show_download_progress(false),
         )
-        .map_err(|e| EmbeddingError::InitializationError(e.to_string()))?;
+        .map_err(|e| EmbeddingError::InitialisationError(e.to_string()))?;
 
         Ok(Self {
             model,
@@ -61,7 +61,7 @@ impl FastEmbedProvider {
             "BAAI/bge-small-en-v1.5" | "bge-small-en-v1.5" => Ok(EmbeddingModel::BGESmallENV15),
             "BAAI/bge-base-en-v1.5" | "bge-base-en-v1.5" => Ok(EmbeddingModel::BGEBaseENV15),
             "BAAI/bge-large-en-v1.5" | "bge-large-en-v1.5" => Ok(EmbeddingModel::BGELargeENV15),
-            _ => Err(EmbeddingError::InitializationError(format!(
+            _ => Err(EmbeddingError::InitialisationError(format!(
                 "Unsupported embedding model: {model_name}. \
                  Supported models: sentence-transformers/all-MiniLM-L6-v2, \
                  BAAI/bge-small-en-v1.5, BAAI/bge-base-en-v1.5, BAAI/bge-large-en-v1.5"
@@ -139,6 +139,10 @@ mod tests {
     fn test_model_dimensions() {
         assert_eq!(
             FastEmbedProvider::get_model_dimension(&EmbeddingModel::AllMiniLML6V2),
+            384
+        );
+        assert_eq!(
+            FastEmbedProvider::get_model_dimension(&EmbeddingModel::BGESmallENV15),
             384
         );
         assert_eq!(

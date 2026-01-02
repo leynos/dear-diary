@@ -57,7 +57,7 @@
   - New functionality or changes in behaviour are fully validated by relevant
     unit tests and behavioural tests.
   - Where a bug is being fixed, a unittest has been provided demonstrating the
-    behaviour being corrected both to validate the fix and to guard against
+    behaviour being corrected, both to validate the fix and to guard against
     regression.
   - Passes all relevant unit and behavioural tests according to the guidelines
     above.
@@ -121,10 +121,11 @@ project:
   - `make check-fmt` executes:
 
     ```sh
-    cargo fmt --workspace -- --check
+    cargo fmt --all -- --check
     ```
 
     validating formatting across the entire workspace without modifying files.
+    Note: `cargo fmt` uses `--all` rather than `--workspace`.
   - `make lint` executes:
 
     ```sh
@@ -140,7 +141,7 @@ project:
     ```
 
     running the full workspace test suite. Use `make fmt`
-    (`cargo fmt --workspace`) to apply formatting fixes reported by the
+    (`cargo fmt --all`) to apply formatting fixes reported by the
     formatter check.
 - Clippy warnings MUST be disallowed.
 - Fix any warnings emitted during tests in the code itself rather than
@@ -185,7 +186,7 @@ project:
 - Use NewTypes to model domain values and eliminate "integer soup". Reach for
   `newt-hype` when introducing many homogeneous wrappers that share behaviour;
   add small shims such as `From<&str>` and `AsRef<str>` for string-backed
-  wrappers. For path-centric wrappers implement `AsRef<Path>` alongside
+  wrappers. For path-centric wrappers, implement `AsRef<Path>` alongside
   `into_inner()` and `to_path_buf()`, avoid attempting
   `impl From<Wrapper> for PathBuf` because of the orphan rule. Prefer explicit
   tuple structs whenever bespoke validation or tailored trait surfaces are
@@ -197,7 +198,7 @@ project:
   `newt-hype` for the common case, tuple structs for outliers, and
   `the-newtype` to unify behaviour when owning the trait definitions.
 - Use `cap_std` and `cap_std::fs_utf8` / `camino` in place of `std::fs` and
-  `std::path` for enhanced cross platform support and capabilities oriented
+  `std::path` for enhanced cross-platform support and capabilities-oriented
   filesystem access.
 
 ### Testing
@@ -220,7 +221,7 @@ project:
   changes from new major versions. This approach is critical for ensuring build
   stability and reproducibility.
 - **Prohibit unstable version specifiers.** The use of wildcard (`*`) or
-  open-ended inequality (`>=`) version requirements is strictly forbidden as
+  open-ended inequality (`>=`) version requirements is strictly forbidden, as
   they introduce unacceptable risk and unpredictability. Tilde requirements
   (`~`) should only be used where a dependency must be locked to patch-level
   updates for a specific, documented reason.

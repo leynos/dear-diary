@@ -425,9 +425,9 @@ via `cargo test --doc --features "serde"`.
 
 Two primary patterns exist to achieve this.
 
-Pattern 1: #\[cfg\] Inside the Code Block
+#### Pattern 1: `#[cfg]` Inside the Code Block
 
-This pattern involves placing a #\[cfg\] attribute directly on the code within
+This pattern involves placing a `#[cfg]` attribute directly on the code within
 the doctest itself.
 
 ```rust,no_run
@@ -448,9 +448,9 @@ out. The doctest becomes an empty program that runs, does nothing, and is
 reported as `ok`. While simple to write, this can be misleading, because the
 test suite reports a "pass" even though the test was effectively skipped.[^14]
 
-Pattern 2: cfg_attr to Conditionally ignore the Test
+#### Pattern 2: `cfg_attr` to Conditionally Ignore the Test
 
-A more explicit and accurate pattern uses the cfg_attr attribute to
+A more explicit and accurate pattern uses the `cfg_attr` attribute to
 conditionally add the ignore flag to the doctest's header. This is typically
 done with inner doc comments (//!).
 

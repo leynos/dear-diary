@@ -6,6 +6,7 @@ TARGET ?= dear-diary
 CARGO ?= cargo
 BUILD_JOBS ?=
 RUST_FLAGS ?= -D warnings
+RUSTDOC_FLAGS ?= -D warnings
 CARGO_FLAGS ?= --workspace --all-targets --all-features
 CLIPPY_FLAGS ?= $(CARGO_FLAGS) -- $(RUST_FLAGS)
 TEST_FLAGS ?= $(CARGO_FLAGS)
@@ -45,4 +46,4 @@ nixie: ## Validate Mermaid diagrams
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?##' $(MAKEFILE_LIST) | \
-	awk 'BEGIN {FS=":"; printf "Available targets:\n"} {printf "  %-20s %s\n", $$1, $$2}'
+	awk -F '##' '{sub(/:.*$$/, "", $$1); printf "  %-20s%s\n", $$1, $$2}'

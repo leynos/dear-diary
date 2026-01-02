@@ -140,9 +140,9 @@ if __name__ == "__main__":
     app()
 ```
 
-Guidance:
+### Guidance
 
-- Parameter names should be descriptive and stable. Where a legacy flag name
+- Parameter names must be descriptive and stable. Where a legacy flag name
   must remain available, add an alias:
 
   ```python
@@ -156,7 +156,7 @@ Guidance:
   formats: Annotated[list[str] | None, Parameter(env_var_split=",")] = None
   ```
 
-- Per‑parameter environment names can be pinned for backwards compatibility:
+- Pin per‑parameter environment names for backwards compatibility:
 
   ```python
   config_out: Annotated[Path | None, Parameter(env_var="INPUT_CONFIG_PATH")] = None

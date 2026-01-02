@@ -6,9 +6,9 @@ use thiserror::Error;
 #[derive(Debug, Error)]
 #[non_exhaustive]
 pub enum EmbeddingError {
-    /// Failed to initialize the embedding model.
-    #[error("Failed to initialize embedding model: {0}")]
-    InitializationError(String),
+    /// Failed to initialise the embedding model.
+    #[error("Failed to initialise embedding model: {0}")]
+    InitialisationError(String),
 
     /// Failed to embed documents.
     #[error("Failed to embed documents: {0}")]

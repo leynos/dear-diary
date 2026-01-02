@@ -5,11 +5,34 @@
 
 use std::process::ExitCode;
 
-use dear_diary_config::Settings;
+use dear_diary_config::{QdrantSettings, Settings};
 use dear_diary_embeddings::FastEmbedProvider;
 use dear_diary_mcp::DiaryServer;
 use dear_diary_qdrant::QdrantConnectorImpl;
 use rmcp::ServiceExt;
+
+/// Determines the Qdrant connection mode from settings.
+enum ConnectionMode<'a> {
+    Remote {
+        url: &'a str,
+        api_key: Option<&'a str>,
+    },
+    Local {
+        path: &'a str,
+    },
+}
+
+/// Returns the connection mode based on Qdrant settings.
+fn connection_mode(settings: &QdrantSettings) -> Result<ConnectionMode<'_>, String> {
+    match (&settings.qdrant_url, &settings.qdrant_local_path) {
+        (Some(url), _) => Ok(ConnectionMode::Remote {
+            url,
+            api_key: settings.qdrant_api_key.as_deref(),
+        }),
+        (None, Some(path)) => Ok(ConnectionMode::Local { path }),
+        (None, None) => Err("Either QDRANT_URL or QDRANT_LOCAL_PATH must be set".to_owned()),
+    }
+}
 
 /// Application entry point.
 ///
@@ -20,7 +43,6 @@ use rmcp::ServiceExt;
     reason = "CLI error output is the intended behaviour"
 )]
 fn main() -> ExitCode {
-    // Run the async runtime
     let result = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
@@ -37,34 +59,27 @@ fn main() -> ExitCode {
 }
 
 async fn run() -> Result<(), String> {
-    // Load configuration from environment
     let settings = Settings::from_env().map_err(|e| format!("Configuration error: {e}"))?;
 
-    // Initialize embedding provider
     let embedding_provider = FastEmbedProvider::new(&settings.embedding_model)
         .map_err(|e| format!("Failed to initialize embedding provider: {e}"))?;
 
-    // Initialize Qdrant connector based on configuration
-    let connector = if let Some(ref url) = settings.qdrant.qdrant_url {
-        QdrantConnectorImpl::new(
+    let connector = match connection_mode(&settings.qdrant)? {
+        ConnectionMode::Remote { url, api_key } => QdrantConnectorImpl::new(
             url,
-            settings.qdrant.qdrant_api_key.as_deref(),
+            api_key,
             settings.qdrant.collection_name.clone(),
             embedding_provider,
         )
-        .map_err(|e| format!("Failed to connect to Qdrant: {e}"))?
-    } else if let Some(ref path) = settings.qdrant.qdrant_local_path {
-        QdrantConnectorImpl::new_local(
+        .map_err(|e| format!("Failed to connect to Qdrant: {e}"))?,
+        ConnectionMode::Local { path } => QdrantConnectorImpl::new_local(
             path,
             settings.qdrant.collection_name.clone(),
             embedding_provider,
         )
-        .map_err(|e| format!("Failed to initialize local Qdrant: {e}"))?
-    } else {
-        return Err("Either QDRANT_URL or QDRANT_LOCAL_PATH must be set".to_owned());
+        .map_err(|e| format!("Failed to initialize local Qdrant: {e}"))?,
     };
 
-    // Create and run the MCP server
     let server = DiaryServer::new(connector, settings);
 
     server

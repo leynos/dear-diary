@@ -39,7 +39,7 @@ let client = Qdrant::from_url("http://localhost:6334")
 
 ### Creating a Collection
 
-Qdrant organises data into [collections][collections] of [points][points].
+Qdrant organizes data into [collections][collections] of [points][points].
 
 ```rust
 use qdrant_client::qdrant::{CreateCollectionBuilder, Distance, VectorParamsBuilder};

@@ -324,7 +324,7 @@ provided, store and find operations will fail with a missing collection error.
 
 ### Multiple collections
 
-Organise memories into separate collections for different purposes:
+Organize memories into separate collections for different purposes:
 
 ```json
 {
