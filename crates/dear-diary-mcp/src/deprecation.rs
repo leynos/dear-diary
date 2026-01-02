@@ -17,7 +17,11 @@ pub(crate) struct DeprecationVisibility {
 /// - Active entries (no deprecation): always included, not marked deprecated
 /// - Recently deprecated (< 7 days): included, marked deprecated
 /// - Old deprecated (>= 7 days): hidden unless `include_deprecated` is true
-pub(crate) const fn visibility(
+#[expect(
+    clippy::missing_const_for_fn,
+    reason = "Runtime-only function; const not needed for deprecation checks"
+)]
+pub(crate) fn visibility(
     now: i64,
     deprecated_at: Option<i64>,
     include_deprecated: bool,
@@ -45,10 +49,9 @@ pub(crate) const fn visibility(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rstest::rstest;
 
     /// Test that active entries (no deprecation) are always visible.
-    #[rstest]
+    #[test]
     fn test_active_entry_visible() {
         let result = visibility(1000, None, false);
         assert!(result.include);
@@ -56,7 +59,7 @@ mod tests {
     }
 
     /// Test that recently deprecated entries (< 7 days) are visible with marker.
-    #[rstest]
+    #[test]
     fn test_recent_deprecation_visible() {
         let now = 1000;
         let deprecated_at = now - (SEVEN_DAYS_SECS - 100); // Less than 7 days ago
@@ -66,7 +69,7 @@ mod tests {
     }
 
     /// Test that old deprecated entries (>= 7 days) are hidden by default.
-    #[rstest]
+    #[test]
     fn test_old_deprecation_hidden() {
         let now = 1_000_000;
         let deprecated_at = now - SEVEN_DAYS_SECS - 100; // More than 7 days ago
@@ -75,7 +78,7 @@ mod tests {
     }
 
     /// Test that old deprecated entries are visible when `include_deprecated` is true.
-    #[rstest]
+    #[test]
     fn test_old_deprecation_visible_when_included() {
         let now = 1_000_000;
         let deprecated_at = now - SEVEN_DAYS_SECS - 100; // More than 7 days ago

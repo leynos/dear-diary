@@ -3,9 +3,9 @@
 Testing is an indispensable part of modern software development, ensuring code
 reliability, maintainability, and correctness. In the Rust ecosystem, while the
 built-in testing framework provides a solid foundation, managing test
-dependencies, and creating parameterised tests can become verbose. The `rstest`
+dependencies, and creating parameterized tests can become verbose. The `rstest`
 crate (<https://github.com/la10736/rstest>) emerges as a powerful solution,
-offering a sophisticated fixture-based, parameterised testing framework that
+offering a sophisticated fixture-based, parameterized testing framework that
 significantly simplifies these tasks through the use of procedural macros. This
 document provides a comprehensive exploration of `rstest`, from fundamental
 concepts to advanced techniques, enabling Rust developers to write cleaner,
@@ -325,7 +325,7 @@ isolation is not a concern, or when the cost of fixture creation is prohibitive.
 
 ## IV. Parameterised tests with `rstest`
 
-`rstest` excels at creating parameterised tests, allowing a single test logic
+`rstest` excels at creating parameterized tests, allowing a single test logic
 to be executed with multiple sets of input data. This is achieved primarily
 through the `#[case]` and `#[values]` attributes.
 
@@ -427,9 +427,9 @@ compile times. Developers must balance the desire for exhaustive combinatorial
 coverage against these practical constraints, perhaps by selecting
 representative values or using `#[case]` for more targeted scenarios.
 
-### C. Using fixtures within parameterised tests
+### C. Using fixtures within parameterized tests
 
-Fixtures can be seamlessly combined with parameterised arguments (`#[case]` or
+Fixtures can be seamlessly combined with parameterized arguments (`#[case]` or
 `#[values]`) in the same test function. This powerful combination allows for
 testing different aspects of a component (varied by parameters) within a
 consistent environment or context (provided by fixtures). The "Complete
@@ -1170,7 +1170,7 @@ can become verbose for scenarios involving shared setup or parameterization.
 The following table summarizes key differences:
 
 **Table 1:** `rstest` vs standard Rust `#[test]` for fixture management and
-parameterisation
+parameterization
 
 | Feature                                  | Standard #[test] Approach                                     | rstest Approach                                                                  |
 | ---------------------------------------- | ------------------------------------------------------------- | -------------------------------------------------------------------------------- |
@@ -1214,7 +1214,7 @@ mind:
   can also be less straightforward if the developer is unfamiliar with how the
   macros expand.
 - **Debugging Parameterised Tests:** `rstest` generates individual test
-  functions for parameterised cases, often named like
+  functions for parameterized cases, often named like
   `test_function_name::case_N`. Understanding this naming convention is helpful
   for identifying and running specific failing cases with
   `cargo test test_function_name::case_N`. Some IDEs, or debuggers, might
@@ -1294,7 +1294,7 @@ execution conditions.
 ## XI. Conclusion and further resources
 
 `rstest` significantly enhances the testing experience in Rust by providing a
-powerful and expressive framework for fixture-based and parameterised testing.
+powerful and expressive framework for fixture-based and parameterized testing.
 Its declarative syntax, enabled by procedural macros, reduces boilerplate,
 improves test readability, and promotes reusability of test setup logic. From
 simple value injection and table-driven tests to complex fixture compositions,
@@ -1312,7 +1312,7 @@ testing requirements.
 `rstest` empowers Rust developers by:
 
 - Simplifying dependency management in tests through fixture injection.
-- Enabling concise and readable parameterised tests with `#[case]` and
+- Enabling concise and readable parameterized tests with `#[case]` and
   `#[values]`.
 - Supporting advanced fixture patterns like composition, `#[once]` for shared
   state, renaming, and partial injection.
@@ -1341,9 +1341,9 @@ provided by `rstest`:
 
 | Attribute                    | Core Purpose                                                                                 |
 | ---------------------------- | -------------------------------------------------------------------------------------------- |
-| #[rstest]                    | Marks a function as a rstest test; enables fixture injection and parameterisation.           |
+| #[rstest]                    | Marks a function as a rstest test; enables fixture injection and parameterization.           |
 | #[fixture]                   | Defines a function that provides a test fixture (setup data or services).                    |
-| #[case(…)]                   | Defines a single parameterised test case with specific input values.                         |
+| #[case(…)]                   | Defines a single parameterized test case with specific input values.                         |
 | #[values(…)]                 | Defines a list of values for an argument, generating tests for each value or combination.    |
 | #[once]                      | Marks a fixture to be initialized only once and shared (as a static reference) across tests. |
 | #[future]                    | Simplifies async argument types by removing impl Future boilerplate.                         |

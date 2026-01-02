@@ -618,39 +618,39 @@ mastering doctests:
 ### **Works cited**
 
 [^1]: Stack Overflow — Writing documentation tests for private modules,
-accessed on July 15, 2025,
+accessed on July 15, 2026,
 <https://stackoverflow.com/questions/70111757/how-can-i-write-documentation-tests-for-private-modules>
-[^2]: Rustdoc doctests need fixing - Swatinem, accessed on July 15, 2025,
+[^2]: Rustdoc doctests need fixing - Swatinem, accessed on July 15, 2026,
 <https://swatinem.de/blog/fix-rustdoc/>
-[^3]: Documentation tests - The rustdoc boOK - Rust Documentation, accessed on
-July 15, 2025, <https://doc.rust-lang.org/rustdoc/documentation-tests.html>
-[^4]: Documentation tests - - GitHub Pages, accessed on July 15, 2025,
+[^3]: Documentation tests - The rustdoc book - Rust Documentation, accessed on
+July 15, 2026, <https://doc.rust-lang.org/rustdoc/documentation-tests.html>
+[^4]: Documentation tests - - GitHub Pages, accessed on July 15, 2026,
 <https://ebarnard.github.io/2019-06-03-rust-smaller-trait-implementers-docs/rustdoc/documentation-tests.html>
-[^5]: Documentation tests - - MIT, accessed on July 15, 2025,
+[^5]: Documentation tests - - MIT, accessed on July 15, 2026,
 <http://web.mit.edu/rust-lang_v1.25/arch/amd64_ubuntu1404/share/doc/rust/html/rustdoc/documentation-tests.html>
-[^6]: LogRocket Blog — Organizing Rust tests, accessed on July 15, 2025,
+[^6]: LogRocket Blog — Organizing Rust tests, accessed on July 15, 2026,
 <https://blog.logrocket.com/how-to-organize-rust-tests/>
 <https://www.reddit.com/r/rust/comments/qk77iu/best_way_to_organise_tests_in_rust/>
-[^7]: Writing Rust documentation - Dev Community, accessed on July 15, 2025,
+[^7]: Writing Rust documentation - Dev Community, accessed on July 15, 2026,
 <https://dev.to/gritmax/writing-rust-documentation-5hn5>
-[^8]: The rustdoc book, accessed on July 15, 2025,
+[^8]: The rustdoc book, accessed on July 15, 2026,
 <https://doc.rust-lang.org/rustdoc/what-is-rustdoc.html>
-[^9]: Documentation - Rust API Guidelines, accessed on July 15, 2025,
+[^9]: Documentation - Rust API Guidelines, accessed on July 15, 2026,
 <https://rust-lang.github.io/api-guidelines/documentation.html>
 [^10]: Best practice for doc testing README - help - The Rust Programming
-       Language Forum, accessed on July 15, 2025,
+       Language Forum, accessed on July 15, 2026,
        <https://users.rust-lang.org/t/best-practice-for-doc-testing-readme/114862>
 [^11]: Compile_fail doc test ignored in cfg(test) - help - The Rust Programming
-Language Forum, accessed on July 15, 2025,
+Language Forum, accessed on July 15, 2026,
 <https://users.rust-lang.org/t/compile-fail-doc-test-ignored-in-cfg-test/124927>
- Accessed on July 15, 2025,
+ Accessed on July 15, 2026,
 <https://users.rust-lang.org/t/test-setup-for-doctests/50426>
 [^12]: quote_doctest - Rust - [Docs.rs](http://Docs.rs), accessed on July 15,
 2025, <https://docs.rs/quote-doctest>
-[^13]: Advanced features - The rustdoc boOK - Rust Documentation, accessed on
-       July 15, 2025, <https://doc.rust-lang.org/rustdoc/advanced-features.html>
+[^13]: Advanced features - The rustdoc book - Rust Documentation, accessed on
+       July 15, 2026, <https://doc.rust-lang.org/rustdoc/advanced-features.html>
 [^14]: Stack Overflow — Conditionally executing a module-level doctest,
-accessed on July 15, 2025,
+accessed on July 15, 2026,
 <https://stackoverflow.com/questions/50312190/how-can-i-conditionally-execute-a-module-level-doctest-based-on-a-feature-flag>
  Stack Overflow — Conditional compilation with doctests, accessed on July 15,
 2025,

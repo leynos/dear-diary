@@ -20,11 +20,10 @@ use dear_diary_qdrant::{Entry, MockQdrantConnector, SearchResult};
 /// Helper to get current Unix timestamp for tests.
 fn current_timestamp() -> i64 {
     #[expect(clippy::cast_possible_wrap, reason = "Unix timestamp fits in i64")]
-    let now = SystemTime::now()
+    SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_secs() as i64)
-        .unwrap_or(0);
-    now
+        .expect("System time should be after Unix epoch")
 }
 
 /// Helper to extract text from Content, panics if not text content.

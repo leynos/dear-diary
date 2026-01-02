@@ -153,7 +153,7 @@ impl<C: QdrantConnector + 'static> DiaryServer<C> {
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .map(|d| d.as_secs() as i64)
-            .unwrap_or(0);
+            .map_err(|e| internal_error(format!("System time before Unix epoch: {e}")))?;
 
         // Filter and format results based on deprecation state
         let content: Vec<Content> = results
@@ -319,9 +319,10 @@ mod tests {
         let connector = MockQdrantConnector::new();
         let server = DiaryServer::new(connector, settings);
 
-        let result = server.resolve_collection_name(Some("custom_collection"));
-        assert!(result.is_ok());
-        assert_eq!(result.ok(), Some("custom_collection".to_owned()));
+        let result = server
+            .resolve_collection_name(Some("custom_collection"))
+            .expect("resolve_collection_name should succeed");
+        assert_eq!(result, "custom_collection");
     }
 
     #[rstest]
@@ -329,9 +330,10 @@ mod tests {
         let connector = MockQdrantConnector::new();
         let server = DiaryServer::new(connector, settings);
 
-        let result = server.resolve_collection_name(None);
-        assert!(result.is_ok());
-        assert_eq!(result.ok(), Some("test_collection".to_owned()));
+        let result = server
+            .resolve_collection_name(None)
+            .expect("resolve_collection_name should succeed");
+        assert_eq!(result, "test_collection");
     }
 
     #[rstest]

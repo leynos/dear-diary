@@ -70,11 +70,19 @@ impl FastEmbedProvider {
     }
 
     /// Returns the vector dimension for a given model.
+    ///
+    /// Only models supported by `parse_model_name` are handled. Callers must
+    /// ensure only supported models reach this function.
+    #[expect(
+        clippy::match_same_arms,
+        reason = "Wildcard fallback needed for future FastEmbed variants"
+    )]
     const fn get_model_dimension(model: &EmbeddingModel) -> usize {
         match model {
+            EmbeddingModel::AllMiniLML6V2 | EmbeddingModel::BGESmallENV15 => 384,
             EmbeddingModel::BGEBaseENV15 => 768,
             EmbeddingModel::BGELargeENV15 => 1024,
-            // AllMiniLML6V2, BGESmallENV15, and other models default to 384
+            // Fallback for any unsupported model that may be added to FastEmbed.
             _ => 384,
         }
     }
@@ -118,9 +126,8 @@ impl EmbeddingProvider for FastEmbedProvider {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rstest::rstest;
 
-    #[rstest]
+    #[test]
     fn test_parse_valid_model_names() {
         assert!(
             FastEmbedProvider::parse_model_name("sentence-transformers/all-MiniLM-L6-v2").is_ok()
@@ -129,13 +136,13 @@ mod tests {
         assert!(FastEmbedProvider::parse_model_name("BAAI/bge-small-en-v1.5").is_ok());
     }
 
-    #[rstest]
+    #[test]
     fn test_parse_invalid_model_name() {
         let result = FastEmbedProvider::parse_model_name("unknown-model");
         assert!(result.is_err());
     }
 
-    #[rstest]
+    #[test]
     fn test_model_dimensions() {
         assert_eq!(
             FastEmbedProvider::get_model_dimension(&EmbeddingModel::AllMiniLML6V2),

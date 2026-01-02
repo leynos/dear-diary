@@ -100,17 +100,16 @@ impl SearchQuery {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rstest::rstest;
     use serde_json::json;
 
-    #[rstest]
+    #[test]
     fn test_entry_new() {
         let entry = Entry::new("Hello, world!");
         assert_eq!(entry.content, "Hello, world!");
         assert!(entry.metadata.is_none());
     }
 
-    #[rstest]
+    #[test]
     fn test_entry_with_metadata() {
         let mut metadata = HashMap::new();
         metadata.insert("key".to_owned(), json!("value"));
@@ -124,7 +123,7 @@ mod tests {
         );
     }
 
-    #[rstest]
+    #[test]
     fn test_entry_serialization() {
         let entry = Entry::new("Test content");
         let json = serde_json::to_string(&entry).ok();

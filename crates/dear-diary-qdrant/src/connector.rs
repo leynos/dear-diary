@@ -321,7 +321,7 @@ impl<E: EmbeddingProvider + 'static> QdrantConnector for QdrantConnectorImpl<E> 
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .map(|d| d.as_secs())
-            .unwrap_or(0);
+            .map_err(|e| QdrantError::StoreError(format!("System time before Unix epoch: {e}")))?;
 
         // Build payload with deprecated_at timestamp
         // Unix timestamps in seconds fit comfortably in i64 until year 292 billion

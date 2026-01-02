@@ -1,8 +1,9 @@
 //! MCP server implementation for Dear Diary.
 //!
 //! This crate implements the Model Context Protocol server using
-//! `rmcp`, providing `qdrant_store` and `qdrant_find` tools for
-//! storing and retrieving information from a Qdrant vector database.
+//! `rmcp`, providing `qdrant_store`, `qdrant_find`, and `qdrant_deprecate`
+//! tools for storing, retrieving, and deprecating information in a Qdrant
+//! vector database.
 //!
 //! # Example
 //!

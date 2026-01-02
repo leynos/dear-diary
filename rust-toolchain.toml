@@ -1,4 +1,8 @@
 [toolchain]
-# Nightly required for Rust Edition 2024
+# Nightly is required because Rust Edition 2024 is not yet stable. Edition 2024
+# introduces ergonomic improvements such as the `gen` keyword for generators,
+# refined `impl Trait` capture rules, and stricter unsafe checks. Once Edition
+# 2024 lands in stable Rust, this toolchain should be switched back to the
+# stable channel.
 channel = "nightly-2025-12-10"
 components = ["rustfmt", "clippy"]

@@ -4,7 +4,7 @@
 
 #![allow(
     dead_code,
-    reason = "Items in this module are used by different test files"
+    reason = "Items are used conditionally by different test binaries"
 )]
 
 use std::sync::atomic::{AtomicUsize, Ordering};
