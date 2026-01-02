@@ -15,7 +15,7 @@ use std::time::Duration;
 use dear_diary_qdrant::{Entry, QdrantConnector, SearchQuery};
 use rstest::rstest;
 
-use crate::common::{TestFixture, wait_for_indexing};
+use crate::common::{TestFixture, wait_for_deprecation, wait_for_indexing};
 
 /// Feature: Deprecating memories
 /// Scenario: Deprecate an entry and verify it's marked as deprecated
@@ -60,8 +60,14 @@ async fn test_deprecate_entry() {
         .await
         .expect("Deprecate should succeed");
 
-    // Small delay for deprecation to be persisted
-    tokio::time::sleep(Duration::from_millis(100)).await;
+    wait_for_deprecation(
+        &fixture.connector,
+        &fixture.collection_name,
+        "dentist",
+        Duration::from_secs(5),
+    )
+    .await
+    .expect("Deprecation should be persisted");
 
     let results_after = fixture
         .connector
@@ -119,8 +125,14 @@ async fn test_deprecated_entry_visible_within_7_days() {
         .await
         .expect("Deprecate should succeed");
 
-    // Small delay for deprecation to be persisted
-    tokio::time::sleep(Duration::from_millis(100)).await;
+    wait_for_deprecation(
+        &fixture.connector,
+        &fixture.collection_name,
+        "dry cleaning",
+        Duration::from_secs(5),
+    )
+    .await
+    .expect("Deprecation should be persisted");
 
     let results_after = fixture
         .connector

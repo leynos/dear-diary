@@ -186,3 +186,45 @@ pub async fn wait_for_indexing<C: QdrantConnector>(
         tokio::time::sleep(POLL_INTERVAL).await;
     }
 }
+
+/// Polls until an entry is marked as deprecated or timeout is reached.
+///
+/// This replaces fixed `tokio::time::sleep` calls after deprecate operations,
+/// allowing tests to proceed as soon as the deprecation is persisted rather
+/// than waiting for a worst-case duration.
+///
+/// # Arguments
+///
+/// * `connector` - The Qdrant connector to use for searching
+/// * `collection_name` - The collection to search in
+/// * `query` - Search query text to find the entry to check
+/// * `timeout` - Maximum time to wait for deprecation
+///
+/// # Returns
+///
+/// `Ok(())` if the entry is deprecated within timeout, `Err` otherwise.
+pub async fn wait_for_deprecation<C: QdrantConnector>(
+    connector: &C,
+    collection_name: &str,
+    query: &str,
+    timeout: Duration,
+) -> Result<(), String> {
+    const POLL_INTERVAL: Duration = Duration::from_millis(50);
+    let start = std::time::Instant::now();
+
+    loop {
+        if connector
+            .search(&SearchQuery::new(query, 1), collection_name)
+            .await
+            .is_ok_and(|results| results.first().is_some_and(|r| r.deprecated_at.is_some()))
+        {
+            return Ok(());
+        }
+
+        if start.elapsed() >= timeout {
+            return Err(format!("Timeout waiting for deprecation after {timeout:?}"));
+        }
+
+        tokio::time::sleep(POLL_INTERVAL).await;
+    }
+}

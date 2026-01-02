@@ -58,8 +58,8 @@ First, **API visibility is strictly limited to public items**. Because the
 doctest is compiled as an external crate, it can only access functions,
 structs, traits, and modules marked with the `pub` keyword. It has no access to
 private items or even crate-level public items (e.g., `pub(crate)`). This is
-not a bug or an oversight, but a fundamental aspect of the design, enforcing the
-perspective of an external consumer.[^1]
+not a bug or an oversight, but a fundamental aspect of the design, enforcing
+the perspective of an external consumer.[^1]
 
 Second, the model has **profound performance implications**. The process of
 invoking `rustc` to compile and link a new executable, for every single

@@ -3,16 +3,17 @@
 //! These tests verify the core functionality of the server using mocked
 //! components to ensure deterministic behavior.
 
+use std::collections::HashMap;
+
 use dear_diary_config::{DEFAULT_EMBEDDING_MODEL, QdrantSettings, Settings, ToolSettings};
 use dear_diary_mcp::DiaryServer;
 use dear_diary_qdrant::{Entry, MockQdrantConnector};
 use rmcp::ServerHandler;
-use rstest::rstest;
+use rstest::{fixture, rstest};
 use serde_json::json;
-use std::collections::HashMap;
 
-/// Creates test settings with a default collection.
-fn create_settings_with_collection(collection_name: Option<&str>) -> Settings {
+/// Creates test settings with configurable collection name and read-only mode.
+fn create_test_settings(collection_name: Option<&str>, read_only: bool) -> Settings {
     Settings {
         tools: ToolSettings::default(),
         qdrant: QdrantSettings {
@@ -21,7 +22,7 @@ fn create_settings_with_collection(collection_name: Option<&str>) -> Settings {
             collection_name: collection_name.map(String::from),
             qdrant_local_path: None,
             search_limit: 10,
-            read_only: false,
+            read_only,
             filterable_fields: Vec::new(),
             allow_arbitrary_filter: false,
         },
@@ -29,22 +30,16 @@ fn create_settings_with_collection(collection_name: Option<&str>) -> Settings {
     }
 }
 
-/// Creates test settings in read-only mode.
-fn create_read_only_settings() -> Settings {
-    Settings {
-        tools: ToolSettings::default(),
-        qdrant: QdrantSettings {
-            qdrant_url: Some("http://localhost:6334".to_owned()),
-            qdrant_api_key: None,
-            collection_name: Some("test".to_owned()),
-            qdrant_local_path: None,
-            search_limit: 10,
-            read_only: true,
-            filterable_fields: Vec::new(),
-            allow_arbitrary_filter: false,
-        },
-        embedding_model: DEFAULT_EMBEDDING_MODEL.to_owned(),
-    }
+/// Fixture providing default test settings with a collection.
+#[fixture]
+fn settings() -> Settings {
+    create_test_settings(Some("test"), false)
+}
+
+/// Fixture providing read-only test settings.
+#[fixture]
+fn read_only_settings() -> Settings {
+    create_test_settings(Some("test"), true)
 }
 
 // ============================================================================
@@ -54,9 +49,8 @@ fn create_read_only_settings() -> Settings {
 /// Feature: Storing information in Qdrant
 /// Scenario: Server can be created with store capabilities
 #[rstest]
-fn test_server_with_store_capability() {
+fn test_server_with_store_capability(settings: Settings) {
     let mock = MockQdrantConnector::new();
-    let settings = create_settings_with_collection(Some("memories"));
     let server = DiaryServer::new(mock, settings);
 
     // Verify server is created with tools enabled
@@ -67,10 +61,9 @@ fn test_server_with_store_capability() {
 /// Feature: Storing information in Qdrant
 /// Scenario: Read-only mode prevents store
 #[rstest]
-fn test_read_only_mode() {
+fn test_read_only_mode(read_only_settings: Settings) {
     let mock = MockQdrantConnector::new();
-    let settings = create_read_only_settings();
-    let server = DiaryServer::new(mock, settings);
+    let server = DiaryServer::new(mock, read_only_settings);
 
     // Server created in read-only mode with tools enabled
     // The store tool will reject requests at runtime
@@ -84,9 +77,8 @@ fn test_read_only_mode() {
 /// Feature: Finding information in Qdrant
 /// Scenario: Server can be created with search capabilities
 #[rstest]
-fn test_server_with_search_capability() {
+fn test_server_with_search_capability(settings: Settings) {
     let mock = MockQdrantConnector::new();
-    let settings = create_settings_with_collection(Some("memories"));
     let server = DiaryServer::new(mock, settings);
 
     // Verify server has proper version info
@@ -102,7 +94,7 @@ fn test_server_with_search_capability() {
 #[rstest]
 fn test_no_default_collection() {
     let mock = MockQdrantConnector::new();
-    let settings = create_settings_with_collection(None);
+    let settings = create_test_settings(None, false);
     let server = DiaryServer::new(mock, settings);
 
     // Server creates successfully, but tool calls without collection_name
@@ -112,9 +104,8 @@ fn test_no_default_collection() {
 
 /// Test server creation with custom search limit
 #[rstest]
-fn test_custom_search_limit() {
+fn test_custom_search_limit(mut settings: Settings) {
     let mock = MockQdrantConnector::new();
-    let mut settings = create_settings_with_collection(Some("test"));
     settings.qdrant.search_limit = 5;
 
     let server = DiaryServer::new(mock, settings);
@@ -123,9 +114,8 @@ fn test_custom_search_limit() {
 
 /// Test server info includes proper metadata
 #[rstest]
-fn test_server_info() {
+fn test_server_info(settings: Settings) {
     let mock = MockQdrantConnector::new();
-    let settings = create_settings_with_collection(Some("test"));
     let server = DiaryServer::new(mock, settings);
 
     let info = server.get_info();

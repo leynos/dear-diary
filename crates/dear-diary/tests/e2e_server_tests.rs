@@ -10,10 +10,10 @@ use dear_diary_mcp::DiaryServer;
 use dear_diary_qdrant::QdrantConnectorImpl;
 use insta::assert_json_snapshot;
 use rmcp::ServerHandler;
-use rstest::{fixture, rstest};
+use rstest::rstest;
 use serde_json::json;
 
-use crate::common::{TestConfig, should_run_qdrant_e2e};
+use crate::common::TestConfig;
 
 /// Shared server configuration for e2e tests.
 struct ServerTestContext {
@@ -60,29 +60,12 @@ fn create_server_context(test_name: &str, read_only: bool) -> ServerTestContext 
     ServerTestContext { server, settings }
 }
 
-#[fixture]
-fn server_info_context() -> Option<ServerTestContext> {
-    if !should_run_qdrant_e2e() {
-        return None;
-    }
-    Some(create_server_context("server_info", false))
-}
-
-#[fixture]
-fn read_only_context() -> Option<ServerTestContext> {
-    if !should_run_qdrant_e2e() {
-        return None;
-    }
-    Some(create_server_context("read_only", true))
-}
-
 /// Feature: Server information
 /// Scenario: Server returns correct capabilities
 #[rstest]
-fn test_server_info_snapshot(server_info_context: Option<ServerTestContext>) {
-    let Some(context) = server_info_context else {
-        return;
-    };
+fn test_server_info_snapshot() {
+    skip_unless_e2e!();
+    let context = create_server_context("server_info", false);
 
     let info = context.server.get_info();
 
@@ -98,10 +81,9 @@ fn test_server_info_snapshot(server_info_context: Option<ServerTestContext>) {
 /// Feature: Read-only mode
 /// Scenario: Read-only settings are properly configured
 #[rstest]
-fn test_read_only_mode_settings(read_only_context: Option<ServerTestContext>) {
-    let Some(context) = read_only_context else {
-        return;
-    };
+fn test_read_only_mode_settings() {
+    skip_unless_e2e!();
+    let context = create_server_context("read_only", true);
 
     assert!(
         context.settings.qdrant.read_only,

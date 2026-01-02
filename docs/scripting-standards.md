@@ -439,7 +439,7 @@ def test_spy_and_record(cmd_mox, monkeypatch, tmp_path):
 
 ## Operational guidelines
 
-- Scripts must be idempotent. Re‑running should converge state without
+- Scripts must be idempotent. Ensure re‑running converges state without
   destructive side effects. Precede writes or rotations with guard conditions
   (for example, checking the secrets manager to confirm existing secrets).
 - Prefer pure functions that accept configuration objects over global state, so
