@@ -58,7 +58,7 @@ First, **API visibility is strictly limited to public items**. Because the
 doctest is compiled as an external crate, it can only access functions,
 structs, traits, and modules marked with the `pub` keyword. It has no access to
 private items or even crate-level public items (e.g., `pub(crate)`). This is
-not a bug or an oversight but a fundamental aspect of the design, enforcing the
+not a bug or an oversight, but a fundamental aspect of the design, enforcing the
 perspective of an external consumer.[^1]
 
 Second, the model has **profound performance implications**. The process of
@@ -295,7 +295,7 @@ change to the setup process would require updating dozens of doctests.
 
 The canonical solution to this problem involves using a special configuration
 flag provided by `rustdoc`: `doctest`. A common mistake is to try to place
-shared test logic in a block guarded by `#[cfg(test)]`. This will not work,
+shared test logic in a block guarded by `#[cfg(test)]`. This will not work
 because `rustdoc` does not enable the `test` configuration flag during its
 compilation process; `#[cfg(test)]` is reserved for unit and integration tests
 run directly by `cargo test`.[^11]
@@ -423,7 +423,7 @@ via `cargo test --doc --features "serde"`.
 
 Two primary patterns exist to achieve this.
 
-#### Pattern 1: `#[cfg]` Inside the Code Block
+#### Pattern 1: `#[cfg]` inside the code block
 
 This pattern involves placing a `#[cfg]` attribute directly on the code within
 the doctest itself.
@@ -443,10 +443,10 @@ the doctest itself.
 
 When the `"serde"` feature is disabled, the code inside the block is compiled
 out. The doctest becomes an empty program that runs, does nothing, and is
-reported as `ok`. While simple to write, this can be misleading, because the
+reported as `ok`. While simple to write, this can be misleading because the
 test suite reports a "pass" even though the test was effectively skipped.[^14]
 
-#### Pattern 2: `cfg_attr` to Conditionally Ignore the Test
+#### Pattern 2: `cfg_attr` to conditionally ignore the test
 
 A more explicit and accurate pattern uses the `cfg_attr` attribute to
 conditionally add the ignore flag to the doctest's header. This is typically

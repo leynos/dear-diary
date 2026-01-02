@@ -71,19 +71,28 @@ impl FastEmbedProvider {
 
     /// Returns the vector dimension for a given model.
     ///
-    /// Only models supported by `parse_model_name` are handled. Callers must
-    /// ensure only supported models reach this function.
+    /// Only models supported by `parse_model_name` are handled. The wildcard
+    /// arm is unreachable in normal operation since `parse_model_name` rejects
+    /// unsupported models before this function is called.
+    ///
+    /// # Panics
+    ///
+    /// Panics if called with an unsupported model variant. This indicates a bug
+    /// where `parse_model_name` and `get_model_dimension` are out of sync.
     #[expect(
-        clippy::match_same_arms,
-        reason = "Wildcard fallback needed for future FastEmbed variants"
+        clippy::unreachable,
+        reason = "FastEmbed's EmbeddingModel has 27+ variants; wildcard needed \
+                  but unreachable since parse_model_name validates first"
     )]
-    const fn get_model_dimension(model: &EmbeddingModel) -> usize {
+    fn get_model_dimension(model: &EmbeddingModel) -> usize {
         match model {
             EmbeddingModel::AllMiniLML6V2 | EmbeddingModel::BGESmallENV15 => 384,
             EmbeddingModel::BGEBaseENV15 => 768,
             EmbeddingModel::BGELargeENV15 => 1024,
-            // Fallback for any unsupported model that may be added to FastEmbed.
-            _ => 384,
+            _ => unreachable!(
+                "Unsupported model passed to get_model_dimension; \
+                 parse_model_name should have rejected this model"
+            ),
         }
     }
 }

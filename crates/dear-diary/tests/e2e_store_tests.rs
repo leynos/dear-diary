@@ -4,11 +4,13 @@
 
 mod common;
 
+use std::time::Duration;
+
 use dear_diary_qdrant::{Entry, QdrantConnector, SearchQuery};
 use rstest::rstest;
 use serde_json::json;
 
-use crate::common::TestFixture;
+use crate::common::{TestFixture, wait_for_indexing};
 
 /// Feature: Storing information in Qdrant
 /// Scenario: Store and retrieve a simple memory
@@ -30,7 +32,14 @@ async fn test_store_and_retrieve_simple_memory() {
         store_result.err()
     );
 
-    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+    wait_for_indexing(
+        &fixture.connector,
+        &fixture.collection_name,
+        "milk",
+        Duration::from_secs(5),
+    )
+    .await
+    .expect("Indexing should complete");
 
     let search_result = fixture
         .connector
@@ -82,7 +91,14 @@ async fn test_store_with_metadata() {
         store_result.err()
     );
 
-    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+    wait_for_indexing(
+        &fixture.connector,
+        &fixture.collection_name,
+        "meeting",
+        Duration::from_secs(5),
+    )
+    .await
+    .expect("Indexing should complete");
 
     let search_result = fixture
         .connector

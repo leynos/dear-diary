@@ -13,7 +13,7 @@ use rmcp::ServerHandler;
 use rstest::{fixture, rstest};
 use serde_json::json;
 
-use crate::common::TestConfig;
+use crate::common::{TestConfig, should_run_qdrant_e2e};
 
 /// Shared server configuration for e2e tests.
 struct ServerTestContext {
@@ -61,20 +61,30 @@ fn create_server_context(test_name: &str, read_only: bool) -> ServerTestContext 
 }
 
 #[fixture]
-fn server_info_context() -> ServerTestContext {
-    create_server_context("server_info", false)
+fn server_info_context() -> Option<ServerTestContext> {
+    if !should_run_qdrant_e2e() {
+        return None;
+    }
+    Some(create_server_context("server_info", false))
 }
 
 #[fixture]
-fn read_only_context() -> ServerTestContext {
-    create_server_context("read_only", true)
+fn read_only_context() -> Option<ServerTestContext> {
+    if !should_run_qdrant_e2e() {
+        return None;
+    }
+    Some(create_server_context("read_only", true))
 }
 
 /// Feature: Server information
 /// Scenario: Server returns correct capabilities
 #[rstest]
-fn test_server_info_snapshot(server_info_context: ServerTestContext) {
-    let info = server_info_context.server.get_info();
+fn test_server_info_snapshot(server_info_context: Option<ServerTestContext>) {
+    let Some(context) = server_info_context else {
+        return;
+    };
+
+    let info = context.server.get_info();
 
     let snapshot_data = json!({
         "name": info.server_info.name,
@@ -88,13 +98,17 @@ fn test_server_info_snapshot(server_info_context: ServerTestContext) {
 /// Feature: Read-only mode
 /// Scenario: Read-only settings are properly configured
 #[rstest]
-fn test_read_only_mode_settings(read_only_context: ServerTestContext) {
+fn test_read_only_mode_settings(read_only_context: Option<ServerTestContext>) {
+    let Some(context) = read_only_context else {
+        return;
+    };
+
     assert!(
-        read_only_context.settings.qdrant.read_only,
+        context.settings.qdrant.read_only,
         "Read-only mode should be enabled"
     );
 
-    let info = read_only_context.server.get_info();
+    let info = context.server.get_info();
     assert!(
         info.capabilities.tools.is_some(),
         "Server should have tools enabled even in read-only mode"

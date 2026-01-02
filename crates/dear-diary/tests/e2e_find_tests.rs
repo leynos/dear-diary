@@ -4,10 +4,12 @@
 
 mod common;
 
+use std::time::Duration;
+
 use dear_diary_qdrant::{Entry, QdrantConnector, SearchQuery};
 use rstest::rstest;
 
-use crate::common::TestFixture;
+use crate::common::{TestFixture, wait_for_indexing};
 
 /// Feature: Finding information in Qdrant
 /// Scenario: Search in empty/non-existent collection returns no results
@@ -60,7 +62,14 @@ async fn test_semantic_search() {
             .expect("Store should succeed");
     }
 
-    tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
+    wait_for_indexing(
+        &fixture.connector,
+        &fixture.collection_name,
+        "cat",
+        Duration::from_secs(5),
+    )
+    .await
+    .expect("Indexing should complete");
 
     let search_result = fixture
         .connector
@@ -103,7 +112,14 @@ async fn test_search_limit() {
             .expect("Store should succeed");
     }
 
-    tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
+    wait_for_indexing(
+        &fixture.connector,
+        &fixture.collection_name,
+        "memory",
+        Duration::from_secs(5),
+    )
+    .await
+    .expect("Indexing should complete");
 
     let search_result = fixture
         .connector

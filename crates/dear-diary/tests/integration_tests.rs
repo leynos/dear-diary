@@ -8,6 +8,8 @@ use dear_diary_mcp::DiaryServer;
 use dear_diary_qdrant::{Entry, MockQdrantConnector};
 use rmcp::ServerHandler;
 use rstest::rstest;
+use serde_json::json;
+use std::collections::HashMap;
 
 /// Creates test settings with a default collection.
 fn create_settings_with_collection(collection_name: Option<&str>) -> Settings {
@@ -151,9 +153,6 @@ fn test_entry_without_metadata() {
 /// Test Entry creation with metadata
 #[rstest]
 fn test_entry_with_metadata() {
-    use serde_json::json;
-    use std::collections::HashMap;
-
     let mut metadata = HashMap::new();
     metadata.insert("category".to_owned(), json!("work"));
     metadata.insert("priority".to_owned(), json!(1));

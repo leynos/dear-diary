@@ -13,9 +13,13 @@ use rstest::rstest;
 use super::tests::settings;
 use super::*;
 use crate::deprecation::SEVEN_DAYS_SECS;
-use crate::tools::FindRequest;
+use crate::tools::{DeprecateRequest, FindRequest, StoreRequest};
 use dear_diary_config::Settings;
-use dear_diary_qdrant::{Entry, MockQdrantConnector, SearchResult};
+use dear_diary_qdrant::{Entry, MockQdrantConnector, QdrantError, SearchResult};
+use rmcp::model::ErrorCode;
+
+/// One day in seconds (24 hours × 3600 seconds).
+const ONE_DAY_SECS: i64 = 24 * 3600;
 
 /// Helper to get current Unix timestamp for tests.
 fn current_timestamp() -> i64 {
@@ -131,7 +135,7 @@ async fn test_recent_deprecated_entries_visible_with_prefix(settings: Settings) 
     connector.expect_collection_exists().returning(|_| Ok(true));
 
     // Deprecated 1 day ago (less than 7 days)
-    let recent_deprecated_ts = now - (24 * 3600);
+    let recent_deprecated_ts = now - ONE_DAY_SECS;
     connector.expect_search().returning(move |_, _| {
         Ok(vec![SearchResult {
             point_id: "test-id".to_owned(),
@@ -184,7 +188,7 @@ async fn test_read_only_mode_rejects_store(mut settings: Settings) {
     let err = result.expect_err("Store should fail in read-only mode");
     assert_eq!(
         err.code,
-        rmcp::model::ErrorCode(-32600),
+        ErrorCode::INVALID_REQUEST,
         "Error code should be INVALID_REQUEST"
     );
 }
@@ -197,7 +201,7 @@ async fn test_read_only_mode_rejects_deprecate(mut settings: Settings) {
     let connector = MockQdrantConnector::new();
 
     let server = DiaryServer::new(connector, settings);
-    let request = crate::tools::DeprecateRequest {
+    let request = DeprecateRequest {
         query: "test query".to_owned(),
         collection_name: None,
     };
@@ -207,7 +211,93 @@ async fn test_read_only_mode_rejects_deprecate(mut settings: Settings) {
     let err = result.expect_err("Deprecate should fail in read-only mode");
     assert_eq!(
         err.code,
-        rmcp::model::ErrorCode(-32600),
+        ErrorCode::INVALID_REQUEST,
         "Error code should be INVALID_REQUEST"
+    );
+}
+
+/// Test that `qdrant_store` succeeds with mocked connector.
+#[rstest]
+#[tokio::test]
+async fn test_store_happy_path(settings: Settings) {
+    let mut connector = MockQdrantConnector::new();
+
+    connector.expect_store().returning(|_, _| Ok(()));
+
+    let server = DiaryServer::new(connector, settings);
+    let request = StoreRequest {
+        information: "Test content to store".to_owned(),
+        metadata: None,
+        collection_name: None,
+    };
+
+    let result = server
+        .qdrant_store(Parameters(request))
+        .await
+        .expect("qdrant_store should succeed");
+
+    let content = result.content.first().expect("Should have content");
+    let text = content_text(content);
+    assert!(
+        text.contains("Successfully stored"),
+        "Success message should indicate successful storage"
+    );
+}
+
+/// Test that `qdrant_find` returns error when backend fails.
+#[rstest]
+#[tokio::test]
+async fn test_find_with_backend_error(settings: Settings) {
+    let mut connector = MockQdrantConnector::new();
+
+    connector.expect_collection_exists().returning(|_| Ok(true));
+
+    connector
+        .expect_search()
+        .returning(|_, _| Err(QdrantError::SearchError("Backend failure".to_owned())));
+
+    let server = DiaryServer::new(connector, settings);
+    let request = FindRequest {
+        query: "test".to_owned(),
+        collection_name: None,
+        filter: None,
+        include_deprecated: false,
+    };
+
+    let result = server.qdrant_find(Parameters(request)).await;
+
+    let err = result.expect_err("qdrant_find should fail with backend error");
+    assert!(
+        err.message.contains("Backend failure"),
+        "Error message should contain backend failure details"
+    );
+}
+
+/// Test that `qdrant_deprecate` handles missing collection gracefully.
+#[rstest]
+#[tokio::test]
+async fn test_deprecate_collection_missing(settings: Settings) {
+    let mut connector = MockQdrantConnector::new();
+
+    connector
+        .expect_collection_exists()
+        .returning(|_| Ok(false));
+
+    let server = DiaryServer::new(connector, settings);
+    let request = DeprecateRequest {
+        query: "test query".to_owned(),
+        collection_name: None,
+    };
+
+    let result = server
+        .qdrant_deprecate(Parameters(request))
+        .await
+        .expect("qdrant_deprecate should succeed with missing collection");
+
+    let content = result.content.first().expect("Should have content");
+    let text = content_text(content);
+    assert!(
+        text.contains("doesn't exist yet"),
+        "Message should indicate collection doesn't exist yet"
     );
 }

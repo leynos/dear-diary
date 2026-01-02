@@ -429,7 +429,7 @@ server.serve(rmcp::transport::stdio()).await?;
 
 Error type for server operations, including:
 
-- `MissingCollectionName` — No collection specified and no default configured
+- `MissingCollectionName` — No collection specified, and no default configured
 - `InvalidFilter` — Filter parsing failed or filters not enabled
 - `ConnectionError` — Failed to connect to Qdrant
 - `StoreError` — Failed to store entry

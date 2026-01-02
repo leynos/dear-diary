@@ -341,8 +341,8 @@ if __name__ == "__main__":
 - Tests reside in `scripts/tests/`, mirroring script names. For example,
   `scripts/bootstrap_doks.py` pairs with `scripts/tests/test_bootstrap_doks.py`.
 - Where scripts rely on environment variables, both happy paths and failure
-  modes must be asserted; tests should demonstrate graceful error handling
-  rather than opaque stack traces.
+  modes must be asserted. Demonstrate graceful error handling in tests rather
+  than opaque stack traces.
 
 ### Mocking Python dependencies (pytest-mock) and environment (monkeypatch)
 
@@ -440,10 +440,10 @@ def test_spy_and_record(cmd_mox, monkeypatch, tmp_path):
 ## Operational guidelines
 
 - Scripts must be idempotent. Re‑running should converge state without
-  destructive side effects. Guard conditions (for example, checking the secrets
-  manager to confirm existing secrets) should precede writes or rotations.
-- Pure functions that accept configuration objects are preferred over global
-  state, so tests can exercise logic deterministically.
+  destructive side effects. Precede writes or rotations with guard conditions
+  (for example, checking the secrets manager to confirm existing secrets).
+- Prefer pure functions that accept configuration objects over global state, so
+  tests can exercise logic deterministically.
 - Exit codes should follow Portable Operating System Interface (POSIX)
   conventions: `0` for success, non-zero for actionable failures.
   Human-friendly error messages should highlight remediation steps.
@@ -493,5 +493,5 @@ def test_spy_and_record(cmd_mox, monkeypatch, tmp_path):
 - On Windows, newline‑separated lists are recommended for `list[Path]` to
   sidestep `;`/`:` semantics.
 
-This document should be referenced when introducing or updating automation
-scripts to maintain a consistent developer experience across the repository.
+Reference this document when introducing or updating automation scripts to
+maintain a consistent developer experience across the repository.

@@ -47,7 +47,7 @@ impl Entry {
 ///
 /// This struct is returned from search operations and includes additional
 /// information needed for subsequent operations like deprecation.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SearchResult {
     /// The unique Qdrant point ID for this entry.
     pub point_id: String,

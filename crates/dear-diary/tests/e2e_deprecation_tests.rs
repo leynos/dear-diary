@@ -1,13 +1,21 @@
 //! End-to-end tests for the deprecation feature.
 //!
 //! Tests marking entries as deprecated and verifying visibility behaviour.
+//!
+//! Note: Tests for entries deprecated >7 days (hidden by default, visible with
+//! `include_deprecated=true`) are implemented with mocks in
+//! `dear_diary_mcp::server_tests` since e2e tests cannot practically wait 7+ days.
+//! See `test_old_deprecated_entries_hidden_in_find` and
+//! `test_old_deprecated_entries_visible_with_flag`.
 
 mod common;
+
+use std::time::Duration;
 
 use dear_diary_qdrant::{Entry, QdrantConnector, SearchQuery};
 use rstest::rstest;
 
-use crate::common::TestFixture;
+use crate::common::{TestFixture, wait_for_indexing};
 
 /// Feature: Deprecating memories
 /// Scenario: Deprecate an entry and verify it's marked as deprecated
@@ -24,7 +32,14 @@ async fn test_deprecate_entry() {
         .await
         .expect("Store should succeed");
 
-    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+    wait_for_indexing(
+        &fixture.connector,
+        &fixture.collection_name,
+        "dentist",
+        Duration::from_secs(5),
+    )
+    .await
+    .expect("Indexing should complete");
 
     let results = fixture
         .connector
@@ -45,7 +60,8 @@ async fn test_deprecate_entry() {
         .await
         .expect("Deprecate should succeed");
 
-    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+    // Small delay for deprecation to be persisted
+    tokio::time::sleep(Duration::from_millis(100)).await;
 
     let results_after = fixture
         .connector
@@ -78,7 +94,14 @@ async fn test_deprecated_entry_visible_within_7_days() {
         .await
         .expect("Store should succeed");
 
-    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+    wait_for_indexing(
+        &fixture.connector,
+        &fixture.collection_name,
+        "dry cleaning",
+        Duration::from_secs(5),
+    )
+    .await
+    .expect("Indexing should complete");
 
     let results = fixture
         .connector
@@ -96,7 +119,8 @@ async fn test_deprecated_entry_visible_within_7_days() {
         .await
         .expect("Deprecate should succeed");
 
-    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+    // Small delay for deprecation to be persisted
+    tokio::time::sleep(Duration::from_millis(100)).await;
 
     let results_after = fixture
         .connector
@@ -136,7 +160,14 @@ async fn test_search_result_includes_point_id() {
         .await
         .expect("Store should succeed");
 
-    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+    wait_for_indexing(
+        &fixture.connector,
+        &fixture.collection_name,
+        "point ID",
+        Duration::from_secs(5),
+    )
+    .await
+    .expect("Indexing should complete");
 
     let results = fixture
         .connector

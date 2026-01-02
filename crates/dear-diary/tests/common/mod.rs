@@ -4,14 +4,16 @@
 
 #![allow(
     dead_code,
-    reason = "Items are used conditionally by different test binaries"
+    reason = "Items shared across test binaries; not all used by each binary"
 )]
 
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::time::Duration;
 
 use dear_diary_config::DEFAULT_EMBEDDING_MODEL;
 use dear_diary_embeddings::FastEmbedProvider;
 use dear_diary_qdrant::QdrantConnectorImpl;
+use dear_diary_qdrant::{QdrantConnector, SearchQuery};
 use qdrant_client::Qdrant;
 
 /// Check if Qdrant e2e tests should run based on environment variable.
@@ -140,5 +142,47 @@ impl TestFixture {
         }
 
         Ok(())
+    }
+}
+
+/// Polls until at least one search result is found or timeout is reached.
+///
+/// This replaces fixed `tokio::time::sleep` calls after store operations,
+/// allowing tests to proceed as soon as indexing completes rather than
+/// waiting for a worst-case duration.
+///
+/// # Arguments
+///
+/// * `connector` - The Qdrant connector to use for searching
+/// * `collection_name` - The collection to search in
+/// * `query` - Search query text to find indexed entries
+/// * `timeout` - Maximum time to wait for indexing
+///
+/// # Returns
+///
+/// `Ok(())` if results were found within timeout, `Err` otherwise.
+pub async fn wait_for_indexing<C: QdrantConnector>(
+    connector: &C,
+    collection_name: &str,
+    query: &str,
+    timeout: Duration,
+) -> Result<(), String> {
+    const POLL_INTERVAL: Duration = Duration::from_millis(50);
+    let start = std::time::Instant::now();
+
+    loop {
+        if connector
+            .search(&SearchQuery::new(query, 1), collection_name)
+            .await
+            .is_ok_and(|results| !results.is_empty())
+        {
+            return Ok(());
+        }
+
+        if start.elapsed() >= timeout {
+            return Err(format!("Timeout waiting for indexing after {timeout:?}"));
+        }
+
+        tokio::time::sleep(POLL_INTERVAL).await;
     }
 }
