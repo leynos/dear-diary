@@ -6,6 +6,14 @@ name: CI
   workflow_dispatch:
 
 jobs:
+  dependabot-automerge:
+    if: ${{ github.actor == 'dependabot[bot]' }}
+    permissions:
+      contents: write
+      pull-requests: write
+      checks: read
+      statuses: read
+    uses: leynos/shared-actions/.github/workflows/dependabot-automerge.yml@235d2d07b9a321364a742310873f6732d7228e72
   build-test:
     runs-on: ubuntu-latest
     permissions:
