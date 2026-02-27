@@ -17,4 +17,17 @@ pub enum ConfigError {
     /// Configuration loading failed.
     #[error("Failed to load configuration: {0}")]
     LoadError(String),
+
+    /// A placeholder in `COLLECTION_NAME` could not be resolved.
+    #[error("Cannot resolve placeholder {{{placeholder}}} in COLLECTION_NAME: {reason}")]
+    UnresolvablePlaceholder {
+        /// The placeholder name (e.g. "repo", "owner").
+        placeholder: String,
+        /// Human-readable explanation of why resolution failed.
+        reason: String,
+    },
+
+    /// A git command failed during placeholder resolution.
+    #[error("Git command failed during COLLECTION_NAME interpolation: {0}")]
+    GitCommandError(String),
 }

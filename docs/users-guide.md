@@ -56,17 +56,17 @@ the MCP client configuration.
 
 _Table 1: Configuration environment variables._
 
-| Variable                 | Description                               | Required | Default                                  |
-| ------------------------ | ----------------------------------------- | -------- | ---------------------------------------- |
-| `QDRANT_URL`             | URL of the Qdrant server (including port) | Yes[^1]  | —                                        |
-| `QDRANT_API_KEY`         | API key for Qdrant authentication         | No       | —                                        |
-| `COLLECTION_NAME`        | Default collection name for operations    | No       | —                                        |
-| `QDRANT_LOCAL_PATH`      | Path for local Qdrant storage             | Yes[^1]  | —                                        |
-| `EMBEDDING_MODEL`        | FastEmbed model identifier                | No       | `sentence-transformers/all-MiniLM-L6-v2` |
-| `QDRANT_SEARCH_LIMIT`    | Maximum number of search results          | No       | `10`                                     |
-| `QDRANT_READ_ONLY`       | Disable write operations                  | No       | `false`                                  |
-| `TOOL_STORE_DESCRIPTION` | Custom description for store tool         | No       | —                                        |
-| `TOOL_FIND_DESCRIPTION`  | Custom description for find tool          | No       | —                                        |
+| Variable                 | Description                                          | Required | Default                                  |
+| ------------------------ | ---------------------------------------------------- | -------- | ---------------------------------------- |
+| `QDRANT_URL`             | URL of the Qdrant server (including port)            | Yes[^1]  | —                                        |
+| `QDRANT_API_KEY`         | API key for Qdrant authentication                    | No       | —                                        |
+| `COLLECTION_NAME`        | Default collection name (supports interpolation[^3]) | No       | —                                        |
+| `QDRANT_LOCAL_PATH`      | Path for local Qdrant storage                        | Yes[^1]  | —                                        |
+| `EMBEDDING_MODEL`        | FastEmbed model identifier                           | No       | `sentence-transformers/all-MiniLM-L6-v2` |
+| `QDRANT_SEARCH_LIMIT`    | Maximum number of search results                     | No       | `10`                                     |
+| `QDRANT_READ_ONLY`       | Disable write operations                             | No       | `false`                                  |
+| `TOOL_STORE_DESCRIPTION` | Custom description for store tool                    | No       | —                                        |
+| `TOOL_FIND_DESCRIPTION`  | Custom description for find tool                     | No       | —                                        |
 
 ### Connection modes
 
@@ -88,6 +88,48 @@ COLLECTION_NAME=my-memories
 EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
 QDRANT_SEARCH_LIMIT=10
 ```
+
+### Collection name interpolation
+
+The `COLLECTION_NAME` environment variable supports placeholder interpolation.
+Placeholders are enclosed in braces and resolved at startup from the current
+git repository and working directory.
+
+_Table 7: Supported placeholders for `COLLECTION_NAME`._
+
+| Placeholder | Description                               | Example value |
+| ----------- | ----------------------------------------- | ------------- |
+| `{repo}`    | Repository name from `origin` remote      | `dear-diary`  |
+| `{owner}`   | Repository owner from `origin` remote     | `leynos`      |
+| `{cwd}`     | Basename of the current working directory | `my-project`  |
+| `{branch}`  | Current git branch name                   | `main`        |
+
+Repository information is inferred from the `origin` remote URL. HTTPS, SSH,
+and SCP-style URLs are all supported. For Source Hut repositories, the tilde
+prefix is stripped from the owner (e.g. `~sircmpwn` becomes `sircmpwn`).
+
+#### Example
+
+```plaintext
+COLLECTION_NAME={owner}-{repo}-notes
+```
+
+With a remote of `git@github.com:leynos/dear-diary.git`, this resolves to
+`leynos-dear-diary-notes`.
+
+#### Error behaviour
+
+If a placeholder is used but the corresponding value cannot be determined, the
+server fails to start with a descriptive error message. Only placeholders that
+are present in the value are evaluated, so `{cwd}` can be used outside a git
+repository without requiring `{repo}` or `{branch}`.
+
+Common failure scenarios:
+
+- `{repo}` or `{owner}` used but no `origin` remote is configured
+- `{branch}` used but HEAD is detached or the directory is not a git
+  repository
+- `{cwd}` used but the current directory cannot be determined
 
 ### Qdrant Cloud configuration
 
@@ -472,6 +514,8 @@ ______________________________________________________________________
 
 [^2]: Arbitrary filter support requires additional configuration and is not
     enabled by default. See "Known limitations" for details.
+
+[^3]: See "Collection name interpolation" for supported placeholders.
 
 [fastembed]: https://github.com/Qdrant/fastembed
 [filter-parsing-issue]: https://github.com/leynos/dear-diary/issues/2

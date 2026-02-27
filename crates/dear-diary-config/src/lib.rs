@@ -10,7 +10,7 @@
 //! |----------|-------------|---------|
 //! | `QDRANT_URL` | Qdrant server URL | None |
 //! | `QDRANT_API_KEY` | API key for Qdrant | None |
-//! | `COLLECTION_NAME` | Default collection name | None |
+//! | `COLLECTION_NAME` | Default collection name (supports interpolation) | None |
 //! | `QDRANT_LOCAL_PATH` | Local storage path | None |
 //! | `EMBEDDING_MODEL` | Embedding model name | `sentence-transformers/all-MiniLM-L6-v2` |
 //! | `QDRANT_SEARCH_LIMIT` | Max search results | 10 |
@@ -19,9 +19,11 @@
 //! | `TOOL_FIND_DESCRIPTION` | Custom find tool description | (default) |
 
 mod error;
+mod interpolation;
 mod settings;
 
 pub use error::ConfigError;
+pub use interpolation::{GitContext, RealGitContext};
 pub use settings::{
     DEFAULT_EMBEDDING_MODEL, FilterableField, FilterableFieldCondition, FilterableFieldType,
     QdrantSettings, Settings, ToolSettings,
