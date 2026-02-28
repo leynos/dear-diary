@@ -505,8 +505,8 @@ filtering on specific fields. When entries are stored with metadata, the
 specified fields become searchable through Qdrant's native filtering
 capabilities.
 
-**Tracking**: This limitation is tracked in
-[GitHub issue #2][filter-parsing-issue].
+**Tracking**: This limitation is tracked in [GitHub issue
+# 2][filter-parsing-issue].
 
 ______________________________________________________________________
 
@@ -517,5 +517,5 @@ ______________________________________________________________________
 
 [^3]: See "Collection name interpolation" for supported placeholders.
 
-[fastembed]: https://github.com/Qdrant/fastembed
-[filter-parsing-issue]: https://github.com/leynos/dear-diary/issues/2
+[fastembed]: <https://github.com/Qdrant/fastembed> [filter-parsing-issue]:
+<https://github.com/leynos/dear-diary/issues/2>
