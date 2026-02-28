@@ -24,19 +24,22 @@ use crate::error::ConfigError;
 pub trait GitContext {
     /// Returns the URL of the git remote named "origin", if available.
     ///
+    /// Returns `Ok(None)` when no remote named "origin" is configured.
+    ///
     /// # Errors
     ///
-    /// Returns an error if the git command could not be executed.
+    /// Returns an error if the git command could not be executed or
+    /// failed for an unexpected reason.
     fn remote_url(&self) -> Result<Option<String>, ConfigError>;
 
     /// Returns the current git branch name, if available.
     ///
-    /// Returns `Ok(None)` when HEAD is detached or the directory is not
-    /// a git repository.
+    /// Returns `Ok(None)` when HEAD is detached.
     ///
     /// # Errors
     ///
-    /// Returns an error if the git command could not be executed.
+    /// Returns an error if the git command could not be executed or
+    /// failed for an unexpected reason.
     fn branch_name(&self) -> Result<Option<String>, ConfigError>;
 
     /// Returns the basename of the current working directory.
@@ -63,10 +66,20 @@ impl GitContext for RealGitContext {
 
         if output.status.success() {
             let url = String::from_utf8_lossy(&output.stdout).trim().to_owned();
-            Ok(if url.is_empty() { None } else { Some(url) })
-        } else {
-            Ok(None)
+            return Ok(if url.is_empty() { None } else { Some(url) });
         }
+
+        // Distinguish "no such remote" from genuine failures.
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        if stderr.contains("No such remote") {
+            return Ok(None);
+        }
+
+        Err(ConfigError::GitCommandError(format_git_failure(
+            "git remote get-url origin",
+            output.status,
+            &stderr,
+        )))
     }
 
     fn branch_name(&self) -> Result<Option<String>, ConfigError> {
@@ -82,31 +95,52 @@ impl GitContext for RealGitContext {
         if output.status.success() {
             let branch = String::from_utf8_lossy(&output.stdout).trim().to_owned();
             // Detached HEAD returns the literal string "HEAD".
-            Ok(if branch.is_empty() || branch == "HEAD" {
+            return Ok(if branch.is_empty() || branch == "HEAD" {
                 None
             } else {
                 Some(branch)
-            })
-        } else {
-            Ok(None)
+            });
         }
+
+        // Distinguish "not a git repo" from genuine failures.
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        if stderr.contains("not a git repository") {
+            return Ok(None);
+        }
+
+        Err(ConfigError::GitCommandError(format_git_failure(
+            "git rev-parse --abbrev-ref HEAD",
+            output.status,
+            &stderr,
+        )))
     }
 
     fn cwd_basename(&self) -> Result<String, ConfigError> {
         let cwd = std::env::current_dir().map_err(|e| {
-            ConfigError::GitCommandError(format!("Failed to determine current directory: {e}"))
+            ConfigError::InterpolationContextError(format!(
+                "Failed to determine current directory: {e}"
+            ))
         })?;
         cwd.file_name()
             .map(|n| n.to_string_lossy().into_owned())
             .ok_or_else(|| {
-                ConfigError::GitCommandError(
+                ConfigError::InterpolationContextError(
                     "Current directory has no basename (e.g. root path)".to_owned(),
                 )
             })
     }
 }
 
+/// Formats a human-readable error message for a failed git command.
+fn format_git_failure(command: &str, status: std::process::ExitStatus, stderr: &str) -> String {
+    let code = status
+        .code()
+        .map_or_else(|| "unknown".to_owned(), |c| c.to_string());
+    format!("{command} failed (exit code {code}): {}", stderr.trim())
+}
+
 /// Parsed owner and repository name from a git remote URL.
+#[derive(Debug)]
 struct RemoteInfo {
     owner: String,
     repo: String,
@@ -118,17 +152,24 @@ struct RemoteInfo {
 /// from the repository name. For Source Hut URLs, the tilde prefix is
 /// stripped from the owner (e.g. `~user` becomes `user`).
 ///
+/// For GitLab subgroup URLs (e.g. `org/sub/subsub/repo`), the owner
+/// is the first path segment and the repo is the last.
+///
 /// # Errors
 ///
 /// Returns an error if the URL cannot be parsed or does not contain
 /// recognisable owner/repo path segments.
 fn parse_remote_url(raw_url: &str) -> Result<RemoteInfo, ConfigError> {
     let url = gix_url::parse(raw_url.into()).map_err(|e| {
-        ConfigError::GitCommandError(format!("Failed to parse git remote URL '{raw_url}': {e}"))
+        ConfigError::InterpolationContextError(format!(
+            "Failed to parse git remote URL '{raw_url}': {e}"
+        ))
     })?;
 
     let path_str = url.path.to_str().map_err(|e| {
-        ConfigError::GitCommandError(format!("Git remote URL path is not valid UTF-8: {e}"))
+        ConfigError::InterpolationContextError(format!(
+            "Git remote URL path is not valid UTF-8: {e}"
+        ))
     })?;
 
     // Strip leading '/' and trailing '.git'.
@@ -137,9 +178,21 @@ fn parse_remote_url(raw_url: &str) -> Result<RemoteInfo, ConfigError> {
         .strip_suffix(".git")
         .unwrap_or(without_prefix);
 
-    let segments: Vec<&str> = clean_path.split('/').filter(|s| !s.is_empty()).collect();
-    if segments.len() < 2 {
-        return Err(ConfigError::GitCommandError(format!(
+    // Walk segments once, tracking the first and last non-empty values.
+    let mut first_segment: Option<&str> = None;
+    let mut last_segment: Option<&str> = None;
+    let mut segment_count: usize = 0;
+
+    for segment in clean_path.split('/').filter(|s| !s.is_empty()) {
+        if first_segment.is_none() {
+            first_segment = Some(segment);
+        }
+        last_segment = Some(segment);
+        segment_count += 1;
+    }
+
+    if segment_count < 2 {
+        return Err(ConfigError::InterpolationContextError(format!(
             concat!(
                 "Cannot extract owner/repo from remote URL '{0}': ",
                 "path does not contain owner/repo segments"
@@ -148,29 +201,25 @@ fn parse_remote_url(raw_url: &str) -> Result<RemoteInfo, ConfigError> {
         )));
     }
 
-    // Owner is the first segment; repo is the last.
-    let owner_raw = segments
-        .first()
-        .ok_or_else(|| unreachable_owner_repo_error(raw_url))?;
-    let repo = segments
-        .last()
-        .ok_or_else(|| unreachable_owner_repo_error(raw_url))?;
+    // SAFETY (logic): segment_count >= 2 guarantees both are Some.
+    let owner_raw = first_segment.ok_or_else(|| {
+        ConfigError::InterpolationContextError(format!(
+            "Cannot extract owner/repo from remote URL '{raw_url}'"
+        ))
+    })?;
+    let repo = last_segment.ok_or_else(|| {
+        ConfigError::InterpolationContextError(format!(
+            "Cannot extract owner/repo from remote URL '{raw_url}'"
+        ))
+    })?;
 
     // Strip Source Hut tilde prefix from owner.
     let owner = owner_raw.strip_prefix('~').unwrap_or(owner_raw);
 
     Ok(RemoteInfo {
         owner: owner.to_owned(),
-        repo: (*repo).to_owned(),
+        repo: repo.to_owned(),
     })
-}
-
-/// Helper for the structurally unreachable case where segments is
-/// non-empty (len >= 2) but `first()`/`last()` returns `None`.
-fn unreachable_owner_repo_error(raw_url: &str) -> ConfigError {
-    ConfigError::GitCommandError(format!(
-        "Cannot extract owner/repo from remote URL '{raw_url}'"
-    ))
 }
 
 /// Interpolates placeholders in a collection name template.
@@ -201,9 +250,10 @@ pub fn interpolate_collection_name(
     // Resolve remote-derived placeholders together (one git call).
     if needs_repo || needs_owner {
         let url = git.remote_url()?.ok_or_else(|| {
-            let placeholder = if needs_repo { "repo" } else { "owner" };
+            // Report all affected placeholders so the user sees the full picture.
+            let affected = unresolved_remote_placeholders(needs_owner, needs_repo);
             ConfigError::UnresolvablePlaceholder {
-                placeholder: placeholder.to_owned(),
+                placeholder: affected,
                 reason: "No git remote named 'origin' is configured".to_owned(),
             }
         })?;
@@ -240,6 +290,18 @@ pub fn interpolate_collection_name(
     Ok(result)
 }
 
+/// Builds a comma-separated list of remote-derived placeholders that
+/// could not be resolved, for inclusion in error messages.
+fn unresolved_remote_placeholders(needs_owner: bool, needs_repo: bool) -> String {
+    match (needs_owner, needs_repo) {
+        (true, true) => "owner, repo".to_owned(),
+        (true, false) => "owner".to_owned(),
+        (false, true) => "repo".to_owned(),
+        // Structurally unreachable: called only when at least one is true.
+        (false, false) => String::new(),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -274,6 +336,16 @@ mod tests {
     fn test_parse_remote_url_rejects_single_segment() {
         let result = parse_remote_url("https://example.com/solo");
         assert!(result.is_err(), "Single path segment should be rejected");
+    }
+
+    #[rstest]
+    fn test_parse_remote_url_error_is_interpolation_context() {
+        let err = parse_remote_url("https://example.com/solo")
+            .expect_err("should fail with single segment");
+        assert!(
+            matches!(err, ConfigError::InterpolationContextError(..)),
+            "Expected InterpolationContextError, got: {err:?}"
+        );
     }
 
     // ── interpolate_collection_name ───────────────────────────────
@@ -361,6 +433,26 @@ mod tests {
     }
 
     #[rstest]
+    fn test_fails_when_no_remote_reports_both_placeholders() {
+        let mut mock = MockGitContext::new();
+        mock.expect_remote_url().returning(|| Ok(None));
+
+        let err = interpolate_collection_name("{owner}-{repo}", &mock)
+            .expect_err("should fail without remote");
+        match err {
+            ConfigError::UnresolvablePlaceholder {
+                ref placeholder, ..
+            } => {
+                assert!(
+                    placeholder.contains("owner") && placeholder.contains("repo"),
+                    "Error should mention both placeholders, got: {placeholder}"
+                );
+            }
+            _ => panic!("Expected UnresolvablePlaceholder, got: {err:?}"),
+        }
+    }
+
+    #[rstest]
     fn test_fails_on_detached_head() {
         let mut mock = MockGitContext::new();
         mock.expect_branch_name().returning(|| Ok(None));
@@ -402,5 +494,33 @@ mod tests {
         let result = interpolate_collection_name("{foo}-literal", &mock)
             .expect("interpolation should succeed");
         assert_eq!(result, "{foo}-literal");
+    }
+
+    #[rstest]
+    fn test_git_command_error_propagated_from_remote() {
+        let mut mock = MockGitContext::new();
+        mock.expect_remote_url()
+            .returning(|| Err(ConfigError::GitCommandError("permission denied".to_owned())));
+
+        let err =
+            interpolate_collection_name("{repo}", &mock).expect_err("should propagate git error");
+        assert!(
+            matches!(err, ConfigError::GitCommandError(..)),
+            "Expected GitCommandError, got: {err:?}"
+        );
+    }
+
+    #[rstest]
+    fn test_git_command_error_propagated_from_branch() {
+        let mut mock = MockGitContext::new();
+        mock.expect_branch_name()
+            .returning(|| Err(ConfigError::GitCommandError("permission denied".to_owned())));
+
+        let err =
+            interpolate_collection_name("{branch}", &mock).expect_err("should propagate git error");
+        assert!(
+            matches!(err, ConfigError::GitCommandError(..)),
+            "Expected GitCommandError, got: {err:?}"
+        );
     }
 }
