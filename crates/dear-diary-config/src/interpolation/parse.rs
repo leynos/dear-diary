@@ -77,6 +77,8 @@ pub(crate) fn parse_remote_url(raw_url: &str) -> Result<RemoteInfo, ConfigError>
         ))),
         1 => {
             // Single segment — repo only, no owner.
+            // SAFETY (logic): segment_count == 1 guarantees
+            // last_segment is Some (set during the loop above).
             let repo = last_segment.ok_or_else(|| {
                 ConfigError::InterpolationContextError(format!(
                     "Cannot extract repository from remote URL \
