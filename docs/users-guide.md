@@ -95,7 +95,7 @@ The `COLLECTION_NAME` environment variable supports placeholder interpolation.
 Placeholders are enclosed in braces and resolved at startup from the current
 git repository and working directory.
 
-_Table 7: Supported placeholders for `COLLECTION_NAME`._
+_Table 2: Supported placeholders for `COLLECTION_NAME`._
 
 | Placeholder | Description                               | Example value |
 | ----------- | ----------------------------------------- | ------------- |
@@ -119,7 +119,7 @@ With a remote of `git@github.com:leynos/dear-diary.git`, this resolves to
 
 #### Error behaviour
 
-If a placeholder is used but the corresponding value cannot be determined, the
+If a placeholder is used, but the corresponding value cannot be determined, the
 server fails to start with a descriptive error message. Only placeholders that
 are present in the value are evaluated, so `{cwd}` can be used outside a git
 repository without requiring `{repo}` or `{branch}`.
@@ -127,9 +127,9 @@ repository without requiring `{repo}` or `{branch}`.
 Common failure scenarios:
 
 - `{repo}` or `{owner}` used but no `origin` remote is configured
-- `{branch}` used but HEAD is detached or the directory is not a git
+- `{branch}` used, but HEAD is detached, or the directory is not a git
   repository
-- `{cwd}` used but the current directory cannot be determined
+- `{cwd}` used, but the current directory cannot be determined
 
 ### Qdrant Cloud configuration
 
@@ -185,7 +185,7 @@ Store information in the Qdrant database.
 
 #### Parameters
 
-_Table 2: Parameters for qdrant_store._
+_Table 3: Parameters for qdrant_store._
 
 | Parameter         | Type   | Required | Description                                 |
 | ----------------- | ------ | -------- | ------------------------------------------- |
@@ -236,7 +236,7 @@ Search for relevant information using semantic similarity.
 
 #### Parameters
 
-_Table 3: Parameters for qdrant_find._
+_Table 4: Parameters for qdrant_find._
 
 | Parameter            | Type    | Required | Description                                 |
 | -------------------- | ------- | -------- | ------------------------------------------- |
@@ -297,7 +297,7 @@ Mark an entry as deprecated. Deprecated entries remain visible for seven days
 
 #### Parameters
 
-_Table 4: Parameters for qdrant_deprecate._
+_Table 5: Parameters for qdrant_deprecate._
 
 | Parameter         | Type   | Required | Description                                 |
 | ----------------- | ------ | -------- | ------------------------------------------- |
@@ -344,7 +344,7 @@ If the entry is already deprecated, no changes are made.
 
 The deprecation system provides graceful memory management:
 
-_Table 5: Deprecation states and visibility._
+_Table 6: Deprecation states and visibility._
 
 | State               | Age        | Default visibility | With `include_deprecated` |
 | ------------------- | ---------- | ------------------ | ------------------------- |
@@ -409,7 +409,7 @@ This is useful for shared read-only access to a memory store.
 
 Dear Diary returns structured MCP errors for common failure cases:
 
-_Table 6: Common error conditions._
+_Table 7: Common error conditions._
 
 | Condition                    | Error code        | Resolution                                         |
 | ---------------------------- | ----------------- | -------------------------------------------------- |
