@@ -60,7 +60,7 @@ _Table 1: Configuration environment variables._
 | ------------------------ | ---------------------------------------------------- | -------- | ---------------------------------------- |
 | `QDRANT_URL`             | URL of the Qdrant server (including port)            | Yes[^1]  | —                                        |
 | `QDRANT_API_KEY`         | API key for Qdrant authentication                    | No       | —                                        |
-| `COLLECTION_NAME`        | Default collection name (supports interpolation[^3]) | No       | —                                        |
+| `COLLECTION_NAME`        | Default collection name (supports interpolation[^2]) | No       | —                                        |
 | `QDRANT_LOCAL_PATH`      | Path for local Qdrant storage                        | Yes[^1]  | —                                        |
 | `EMBEDDING_MODEL`        | FastEmbed model identifier                           | No       | `sentence-transformers/all-MiniLM-L6-v2` |
 | `QDRANT_SEARCH_LIMIT`    | Maximum number of search results                     | No       | `10`                                     |
@@ -242,7 +242,7 @@ _Table 4: Parameters for qdrant_find._
 | -------------------- | ------- | -------- | ------------------------------------------- |
 | `query`              | string  | Yes      | The search query                            |
 | `collection_name`    | string  | No       | Target collection (uses default if omitted) |
-| `filter`             | object  | No       | Qdrant filter object[^2]                    |
+| `filter`             | object  | No       | Qdrant filter object[^3]                    |
 | `include_deprecated` | boolean | No       | Include deprecated entries (default: false) |
 
 #### Deprecation filtering
@@ -511,10 +511,10 @@ ______________________________________________________________________
 
 [^1]: Either `QDRANT_URL` or `QDRANT_LOCAL_PATH` must be set, but not both.
 
-[^2]: Arbitrary filter support requires additional configuration and is not
-    enabled by default. See "Known limitations" for details.
+[^2]: See "Collection name interpolation" for supported placeholders.
 
-[^3]: See "Collection name interpolation" for supported placeholders.
+[^3]: Arbitrary filter support requires additional configuration and is not
+    enabled by default. See "Known limitations" for details.
 
 [fastembed]: https://github.com/Qdrant/fastembed
 [filter-parsing-issue]: https://github.com/leynos/dear-diary/issues/2
