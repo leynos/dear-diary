@@ -126,7 +126,7 @@ repository without requiring `{repo}` or `{branch}`.
 
 Common failure scenarios:
 
-- `{repo}` or `{owner}` used but no `origin` remote is configured
+- `{repo}` or `{owner}` used, but no `origin` remote is configured
 - `{branch}` used, but HEAD is detached, or the directory is not a git
   repository
 - `{cwd}` used, but the current directory cannot be determined
