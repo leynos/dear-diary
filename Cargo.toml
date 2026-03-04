@@ -47,6 +47,10 @@ fastembed = "4.8"
 # Error handling
 thiserror = "2.0"
 
+# Git URL parsing
+bstr = "1.12"
+gix-url = "0.35"
+
 # Async traits
 async-trait = "0.1"
 

@@ -3,6 +3,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::error::ConfigError;
+use crate::interpolation;
 
 /// Default description for the store tool.
 pub const DEFAULT_TOOL_STORE_DESCRIPTION: &str =
@@ -235,12 +236,33 @@ pub struct Settings {
 }
 
 impl Settings {
-    /// Loads settings from environment variables.
+    /// Loads settings from environment variables, resolving any
+    /// placeholders in `COLLECTION_NAME`.
     ///
     /// # Errors
     ///
-    /// Returns an error if required configuration is missing or invalid.
+    /// Returns an error if required configuration is missing, invalid,
+    /// or if placeholders in `COLLECTION_NAME` cannot be resolved.
     pub fn from_env() -> Result<Self, ConfigError> {
+        Self::from_env_with_git(&interpolation::RealGitContext)
+    }
+
+    /// Loads settings from environment variables using the provided
+    /// git context for placeholder resolution.
+    ///
+    /// This method exists for testability; production code should use
+    /// [`from_env`](Self::from_env).
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if required configuration is missing, invalid,
+    /// or if placeholders in `COLLECTION_NAME` cannot be resolved.
+    pub fn from_env_with_git(git: &impl interpolation::GitContext) -> Result<Self, ConfigError> {
+        let collection_name = std::env::var("COLLECTION_NAME")
+            .ok()
+            .map(|raw| interpolation::interpolate_collection_name(&raw, git))
+            .transpose()?;
+
         let settings = Self {
             tools: ToolSettings {
                 tool_store_description: std::env::var("TOOL_STORE_DESCRIPTION")
@@ -251,7 +273,7 @@ impl Settings {
             qdrant: QdrantSettings {
                 qdrant_url: std::env::var("QDRANT_URL").ok(),
                 qdrant_api_key: std::env::var("QDRANT_API_KEY").ok(),
-                collection_name: std::env::var("COLLECTION_NAME").ok(),
+                collection_name,
                 qdrant_local_path: std::env::var("QDRANT_LOCAL_PATH").ok(),
                 search_limit: std::env::var("QDRANT_SEARCH_LIMIT")
                     .ok()

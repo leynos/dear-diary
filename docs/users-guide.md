@@ -56,17 +56,17 @@ the MCP client configuration.
 
 _Table 1: Configuration environment variables._
 
-| Variable                 | Description                               | Required | Default                                  |
-| ------------------------ | ----------------------------------------- | -------- | ---------------------------------------- |
-| `QDRANT_URL`             | URL of the Qdrant server (including port) | Yes[^1]  | —                                        |
-| `QDRANT_API_KEY`         | API key for Qdrant authentication         | No       | —                                        |
-| `COLLECTION_NAME`        | Default collection name for operations    | No       | —                                        |
-| `QDRANT_LOCAL_PATH`      | Path for local Qdrant storage             | Yes[^1]  | —                                        |
-| `EMBEDDING_MODEL`        | FastEmbed model identifier                | No       | `sentence-transformers/all-MiniLM-L6-v2` |
-| `QDRANT_SEARCH_LIMIT`    | Maximum number of search results          | No       | `10`                                     |
-| `QDRANT_READ_ONLY`       | Disable write operations                  | No       | `false`                                  |
-| `TOOL_STORE_DESCRIPTION` | Custom description for store tool         | No       | —                                        |
-| `TOOL_FIND_DESCRIPTION`  | Custom description for find tool          | No       | —                                        |
+| Variable                 | Description                                          | Required | Default                                  |
+| ------------------------ | ---------------------------------------------------- | -------- | ---------------------------------------- |
+| `QDRANT_URL`             | URL of the Qdrant server (including port)            | Yes[^1]  | —                                        |
+| `QDRANT_API_KEY`         | API key for Qdrant authentication                    | No       | —                                        |
+| `COLLECTION_NAME`        | Default collection name (supports interpolation[^2]) | No       | —                                        |
+| `QDRANT_LOCAL_PATH`      | Path for local Qdrant storage                        | Yes[^1]  | —                                        |
+| `EMBEDDING_MODEL`        | FastEmbed model identifier                           | No       | `sentence-transformers/all-MiniLM-L6-v2` |
+| `QDRANT_SEARCH_LIMIT`    | Maximum number of search results                     | No       | `10`                                     |
+| `QDRANT_READ_ONLY`       | Disable write operations                             | No       | `false`                                  |
+| `TOOL_STORE_DESCRIPTION` | Custom description for store tool                    | No       | —                                        |
+| `TOOL_FIND_DESCRIPTION`  | Custom description for find tool                     | No       | —                                        |
 
 ### Connection modes
 
@@ -88,6 +88,48 @@ COLLECTION_NAME=my-memories
 EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
 QDRANT_SEARCH_LIMIT=10
 ```
+
+### Collection name interpolation
+
+The `COLLECTION_NAME` environment variable supports placeholder interpolation.
+Placeholders are enclosed in braces and resolved at startup from the current
+git repository and working directory.
+
+_Table 2: Supported placeholders for `COLLECTION_NAME`._
+
+| Placeholder | Description                               | Example value |
+| ----------- | ----------------------------------------- | ------------- |
+| `{repo}`    | Repository name from `origin` remote      | `dear-diary`  |
+| `{owner}`   | Repository owner from `origin` remote     | `leynos`      |
+| `{cwd}`     | Basename of the current working directory | `my-project`  |
+| `{branch}`  | Current git branch name                   | `main`        |
+
+Repository information is inferred from the `origin` remote URL. HTTPS, SSH,
+and SCP-style URLs are all supported. For Source Hut repositories, the tilde
+prefix is stripped from the owner (e.g. `~sircmpwn` becomes `sircmpwn`).
+
+#### Example
+
+```plaintext
+COLLECTION_NAME={owner}-{repo}-notes
+```
+
+With a remote of `git@github.com:leynos/dear-diary.git`, this resolves to
+`leynos-dear-diary-notes`.
+
+#### Error behaviour
+
+If a placeholder is used, but the corresponding value cannot be determined, the
+server fails to start with a descriptive error message. Only placeholders that
+are present in the value are evaluated, so `{cwd}` can be used outside a git
+repository without requiring `{repo}` or `{branch}`.
+
+Common failure scenarios:
+
+- `{repo}` or `{owner}` used, but no `origin` remote is configured
+- `{branch}` used, but HEAD is detached, or the directory is not a git
+  repository
+- `{cwd}` used, but the current directory cannot be determined
 
 ### Qdrant Cloud configuration
 
@@ -143,7 +185,7 @@ Store information in the Qdrant database.
 
 #### Parameters
 
-_Table 2: Parameters for qdrant_store._
+_Table 3: Parameters for qdrant_store._
 
 | Parameter         | Type   | Required | Description                                 |
 | ----------------- | ------ | -------- | ------------------------------------------- |
@@ -194,13 +236,13 @@ Search for relevant information using semantic similarity.
 
 #### Parameters
 
-_Table 3: Parameters for qdrant_find._
+_Table 4: Parameters for qdrant_find._
 
 | Parameter            | Type    | Required | Description                                 |
 | -------------------- | ------- | -------- | ------------------------------------------- |
 | `query`              | string  | Yes      | The search query                            |
 | `collection_name`    | string  | No       | Target collection (uses default if omitted) |
-| `filter`             | object  | No       | Qdrant filter object[^2]                    |
+| `filter`             | object  | No       | Qdrant filter object[^3]                    |
 | `include_deprecated` | boolean | No       | Include deprecated entries (default: false) |
 
 #### Deprecation filtering
@@ -255,7 +297,7 @@ Mark an entry as deprecated. Deprecated entries remain visible for seven days
 
 #### Parameters
 
-_Table 4: Parameters for qdrant_deprecate._
+_Table 5: Parameters for qdrant_deprecate._
 
 | Parameter         | Type   | Required | Description                                 |
 | ----------------- | ------ | -------- | ------------------------------------------- |
@@ -302,7 +344,7 @@ If the entry is already deprecated, no changes are made.
 
 The deprecation system provides graceful memory management:
 
-_Table 5: Deprecation states and visibility._
+_Table 6: Deprecation states and visibility._
 
 | State               | Age        | Default visibility | With `include_deprecated` |
 | ------------------- | ---------- | ------------------ | ------------------------- |
@@ -367,7 +409,7 @@ This is useful for shared read-only access to a memory store.
 
 Dear Diary returns structured MCP errors for common failure cases:
 
-_Table 6: Common error conditions._
+_Table 7: Common error conditions._
 
 | Condition                    | Error code        | Resolution                                         |
 | ---------------------------- | ----------------- | -------------------------------------------------- |
@@ -463,14 +505,15 @@ filtering on specific fields. When entries are stored with metadata, the
 specified fields become searchable through Qdrant's native filtering
 capabilities.
 
-**Tracking**: This limitation is tracked in
-[GitHub issue #2][filter-parsing-issue].
+**Tracking**: This limitation is tracked in [GitHub issue `#2`][filter-parsing-issue].
 
 ______________________________________________________________________
 
 [^1]: Either `QDRANT_URL` or `QDRANT_LOCAL_PATH` must be set, but not both.
 
-[^2]: Arbitrary filter support requires additional configuration and is not
+[^2]: See "Collection name interpolation" for supported placeholders.
+
+[^3]: Arbitrary filter support requires additional configuration and is not
     enabled by default. See "Known limitations" for details.
 
 [fastembed]: https://github.com/Qdrant/fastembed
