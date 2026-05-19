@@ -83,19 +83,23 @@ jobs:
           version="${GITHUB_REF_NAME#v}"
           artifact_dir="artifacts/${{ matrix.os }}-${{ matrix.arch }}"
           binary_path="target/${{ matrix.target }}/release/${{ env.PACKAGE_NAME }}${{ matrix.ext }}"
-          binary_name="${{ env.REPO_NAME }}-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.ext }}"
+          binary_name="${{ env.PACKAGE_NAME }}-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.ext }}"
 
           mkdir -p "${artifact_dir}"
           cp "${binary_path}" "${artifact_dir}/${binary_name}"
-          sha256sum "${artifact_dir}/${binary_name}" > \
-            "${artifact_dir}/${binary_name}.sha256"
+          (
+            cd "${artifact_dir}"
+            sha256sum "${binary_name}" > "${binary_name}.sha256"
+          )
 
           if [ "${{ matrix.cargo_binstall_archive }}" = "true" ]; then
-            archive_name="${{ env.REPO_NAME }}-${version}-${{ matrix.target }}.tar.gz"
+            archive_name="${{ env.PACKAGE_NAME }}-${version}-${{ matrix.target }}.tar.gz"
             tar -C "target/${{ matrix.target }}/release" -czf \
               "${artifact_dir}/${archive_name}" "${{ env.PACKAGE_NAME }}${{ matrix.ext }}"
-            sha256sum "${artifact_dir}/${archive_name}" > \
-              "${artifact_dir}/${archive_name}.sha256"
+            (
+              cd "${artifact_dir}"
+              sha256sum "${archive_name}" > "${archive_name}.sha256"
+            )
           fi
       - name: Upload release artifact
         uses: actions/upload-artifact@v4
@@ -106,6 +110,8 @@ jobs:
   release:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
       - uses: softprops/action-gh-release@v2
@@ -117,7 +123,7 @@ jobs:
       - run: |
           for dir in artifacts/${{ env.REPO_NAME }}-*; do
             for file in "$dir"/*; do
-              gh release upload "${{ github.ref_name }}" "$file"
+              gh release upload "${{ github.ref_name }}" "$file" --clobber
             done
           done
         env:

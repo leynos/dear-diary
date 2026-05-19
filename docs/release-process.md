@@ -1,4 +1,4 @@
-# Release Process
+# Release process
 
 This project publishes prebuilt binaries for multiple operating systems and
 architectures. It also publishes `cargo-binstall` archives for the supported
