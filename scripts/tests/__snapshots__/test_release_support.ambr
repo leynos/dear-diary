@@ -1,0 +1,17 @@
+# serializer version: 1
+# name: test_prepare_artifact_command_output_snapshot
+  '''
+  Prepared 4 release artefacts:
+  - artifacts/linux-x86_64/dear-diary-linux-x86_64
+  - artifacts/linux-x86_64/dear-diary-linux-x86_64.sha256
+  - artifacts/linux-x86_64/dear-diary-0.1.0-x86_64-unknown-linux-gnu.tar.gz
+  - artifacts/linux-x86_64/dear-diary-0.1.0-x86_64-unknown-linux-gnu.tar.gz.sha256
+  
+  '''
+# ---
+# name: test_verify_version_command_output_snapshot
+  '''
+  Release tag 0.1.0 matches Cargo.toml.
+  
+  '''
+# ---

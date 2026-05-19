@@ -115,7 +115,7 @@ jobs:
               echo "Uploading ${file}"
               gh release upload "${{ github.ref_name }}" "$file" --clobber
               uploaded_count=$((uploaded_count + 1))
-              echo "metric=release_asset_uploaded count=${uploaded_count} file=${file}"
+              echo "metric=release_asset_uploaded count=${uploaded_count}"
             done
           done
           echo "Uploaded ${uploaded_count} release assets."

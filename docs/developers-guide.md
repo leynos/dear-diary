@@ -19,10 +19,16 @@ rerun replaces existing files instead of failing on duplicates.
 ## Release helper script
 
 Release version checks live in `scripts/release_version.py`. Artefact copying,
-archive generation, and checksum creation live in `scripts/release_packaging.py`.
-The `scripts/release_support.py` script keeps the command-line wiring thin.
-Keep this logic in scripts rather than embedding it directly in workflow shell
-blocks so it remains testable.
+archive generation, and checksum creation live in
+`scripts/release_packaging.py`. The `scripts/release_support.py` script keeps
+the command-line wiring thin. Keep this logic in scripts rather than embedding
+it directly in workflow shell blocks so it remains testable.
+
+The helper is split across focused modules to keep each file comfortably under
+the project size limit and to make command wiring, manifest validation, and
+packaging side effects independently reviewable. Release automation also pins
+external Git references rather than using floating tags; for example, the
+workflow installs `cross` from a fixed revision so reruns use the same source.
 
 The script follows the repository scripting standards:
 
@@ -38,8 +44,10 @@ make test-scripts
 ```
 
 The tests verify workspace-inherited Cargo versions, tag/version matching,
-`cargo-binstall` metadata, archive layout, and checksum manifests that contain
-only asset basenames.
+Cyclopts environment mapping, GitHub Actions upload wiring, `cargo-binstall`
+metadata, archive layout, and checksum manifests that contain only asset
+basenames. Snapshot tests pin the command output shape for the release helper
+commands.
 
 GitHub Actions installs `uv` with `astral-sh/setup-uv` before running the
 release helper. The helper targets Python 3.13, matching the repository

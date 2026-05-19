@@ -12,7 +12,7 @@ CLIPPY_FLAGS ?= $(CARGO_FLAGS) -- $(RUST_FLAGS)
 TEST_FLAGS ?= $(CARGO_FLAGS)
 MDLINT ?= markdownlint-cli2
 NIXIE ?= nixie
-PYTEST ?= uv run --with pytest --with cyclopts python -m pytest
+PYTEST ?= uv run --with pytest --with cyclopts --with syrupy python -m pytest
 
 build: target/debug/$(TARGET) ## Build debug binary
 release: target/release/$(TARGET) ## Build release binary

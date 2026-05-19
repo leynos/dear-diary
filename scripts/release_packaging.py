@@ -32,6 +32,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 logger = logging.getLogger("release_support.packaging")
+CHUNK_SIZE = 1024 * 1024
 
 
 @dataclass(frozen=True)
@@ -135,7 +136,11 @@ def write_sha256_manifest(path: Path) -> Path:
     'dear-diary-linux-x86_64.sha256'
     """
     logger.info("operation=write_sha256_manifest phase=start path=%s", path)
-    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    hasher = hashlib.sha256()
+    with path.open("rb") as artefact:
+        for chunk in iter(lambda: artefact.read(CHUNK_SIZE), b""):
+            hasher.update(chunk)
+    digest = hasher.hexdigest()
     manifest_path = path.with_name(f"{path.name}.sha256")
     manifest_path.write_text(f"{digest}  {path.name}\n", encoding="utf-8")
     logger.info(
