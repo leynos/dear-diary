@@ -3,17 +3,17 @@
 from __future__ import annotations
 
 import tarfile
+import tomllib
 from pathlib import Path
 
 import pytest
 
-from scripts.release_support import (
+from scripts.release_packaging import (
     ArtifactRequest,
-    assert_tag_matches_version,
-    load_package_version,
     prepare_artifacts,
     write_sha256_manifest,
 )
+from scripts.release_version import assert_tag_matches_version, load_package_version
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
@@ -75,11 +75,19 @@ def test_dear_diary_manifest_defines_binstall_metadata() -> None:
     manifest = (PROJECT_ROOT / "crates" / "dear-diary" / "Cargo.toml").read_text(
         encoding="utf-8"
     )
+    parsed_manifest = tomllib.loads(manifest)
+    binstall_metadata = parsed_manifest["package"]["metadata"]["binstall"]
+    linux_overrides = binstall_metadata["overrides"][
+        'cfg(all(target_os = "linux", any(target_arch = "x86_64", '
+        'target_arch = "aarch64"), target_env = "gnu"))'
+    ]
 
-    assert "[package.metadata.binstall]" in manifest
-    assert "{ name }-{ version }-{ target }.tar.gz" in manifest
-    assert 'bin-dir = "{ bin }{ binary-ext }"' in manifest
-    assert 'pkg-fmt = "tgz"' in manifest
+    assert linux_overrides["pkg-url"] == (
+        "{ repo }/releases/download/v{ version }/"
+        "{ name }-{ version }-{ target }.tar.gz"
+    )
+    assert linux_overrides["bin-dir"] == "{ bin }{ binary-ext }"
+    assert linux_overrides["pkg-fmt"] == "tgz"
 
 
 def test_assert_tag_matches_version_accepts_prefixed_tag() -> None:
