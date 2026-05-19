@@ -33,25 +33,21 @@ jobs:
             cargo_binstall_archive: false
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
-      - name: Setup Python 3.11
+      - name: Setup Python 3.13
         id: setup-python
         uses: actions/setup-python@v6
         with:
-          python-version: '3.11'
+          python-version: '3.13'
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v7
       - name: Verify tag matches Cargo.toml
+        env:
+          INPUT_CARGO_TOML_PATH: ${{ env.CARGO_TOML_PATH }}
+          INPUT_GITHUB_REF_NAME: ${{ github.ref_name }}
         run: |
           set -euo pipefail
-          tag="${GITHUB_REF_NAME#v}"
-          cargo_version="$("${{ steps.setup-python.outputs.python-path }}" -c 'import os, pathlib, tomllib; root = tomllib.loads(pathlib.Path("Cargo.toml").read_text(encoding="utf-8")); package = tomllib.loads(pathlib.Path(os.environ["CARGO_TOML_PATH"]).read_text(encoding="utf-8")); version = package["package"].get("version"); print(root["workspace"]["package"]["version"] if isinstance(version, dict) and version.get("workspace") else version)')"
-          if [ -z "${cargo_version:-}" ]; then
-            echo "::error title=Cargo.toml parse failure::Could not read package.version from ${CARGO_TOML_PATH} or workspace.package.version from Cargo.toml."
-            exit 1
-          fi
-          if [ "$tag" != "$cargo_version" ]; then
-            echo "::error title=Tag/Cargo.toml mismatch::Tag version $tag does not match Cargo.toml version $cargo_version"
-            exit 1
-          fi
-          echo "Release tag $tag matches Cargo.toml version."
+          "${{ steps.setup-python.outputs.python-path }}" --version
+          uv run scripts/release_support.py verify-version
       - name: Setup Rust
         uses: leynos/shared-actions/.github/actions/setup-rust@aebb3f5b831102e2a10ef909c83d7d50ea86c332
       - name: Cache cross binary
@@ -78,29 +74,17 @@ jobs:
       - name: Build release binary
         run: cross build --release --target ${{ matrix.target }} --package ${{ env.PACKAGE_NAME }} --bin ${{ env.PACKAGE_NAME }}
       - name: Prepare artifact
+        env:
+          INPUT_PACKAGE_NAME: ${{ env.PACKAGE_NAME }}
+          INPUT_VERSION: ${{ github.ref_name }}
+          INPUT_TARGET: ${{ matrix.target }}
+          INPUT_OS: ${{ matrix.os }}
+          INPUT_ARCH: ${{ matrix.arch }}
+          INPUT_EXT: ${{ matrix.ext }}
+          INPUT_CARGO_BINSTALL_ARCHIVE: ${{ matrix.cargo_binstall_archive }}
         run: |
           set -euo pipefail
-          version="${GITHUB_REF_NAME#v}"
-          artifact_dir="artifacts/${{ matrix.os }}-${{ matrix.arch }}"
-          binary_path="target/${{ matrix.target }}/release/${{ env.PACKAGE_NAME }}${{ matrix.ext }}"
-          binary_name="${{ env.PACKAGE_NAME }}-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.ext }}"
-
-          mkdir -p "${artifact_dir}"
-          cp "${binary_path}" "${artifact_dir}/${binary_name}"
-          (
-            cd "${artifact_dir}"
-            sha256sum "${binary_name}" > "${binary_name}.sha256"
-          )
-
-          if [ "${{ matrix.cargo_binstall_archive }}" = "true" ]; then
-            archive_name="${{ env.PACKAGE_NAME }}-${version}-${{ matrix.target }}.tar.gz"
-            tar -C "target/${{ matrix.target }}/release" -czf \
-              "${artifact_dir}/${archive_name}" "${{ env.PACKAGE_NAME }}${{ matrix.ext }}"
-            (
-              cd "${artifact_dir}"
-              sha256sum "${archive_name}" > "${archive_name}.sha256"
-            )
-          fi
+          uv run scripts/release_support.py prepare-artifact
       - name: Upload release artifact
         uses: actions/upload-artifact@v4
         with:
@@ -121,10 +105,15 @@ jobs:
         with:
           path: artifacts
       - run: |
+          uploaded_count=0
           for dir in artifacts/${{ env.REPO_NAME }}-*; do
+            echo "Uploading release assets from ${dir}"
             for file in "$dir"/*; do
+              echo "Uploading ${file}"
               gh release upload "${{ github.ref_name }}" "$file" --clobber
+              uploaded_count=$((uploaded_count + 1))
             done
           done
+          echo "Uploaded ${uploaded_count} release assets."
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

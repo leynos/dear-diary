@@ -1,4 +1,4 @@
-.PHONY: help all clean test build release lint fmt check-fmt markdownlint nixie
+.PHONY: help all clean test test-scripts build release lint fmt check-fmt markdownlint nixie
 
 
 TARGET ?= dear-diary
@@ -12,17 +12,21 @@ CLIPPY_FLAGS ?= $(CARGO_FLAGS) -- $(RUST_FLAGS)
 TEST_FLAGS ?= $(CARGO_FLAGS)
 MDLINT ?= markdownlint-cli2
 NIXIE ?= nixie
+PYTEST ?= uv run --with pytest --with cyclopts python -m pytest
 
 build: target/debug/$(TARGET) ## Build debug binary
 release: target/release/$(TARGET) ## Build release binary
 
-all: check-fmt lint test ## Perform a comprehensive check of code
+all: check-fmt lint test test-scripts ## Perform a comprehensive check of code
 
 clean: ## Remove build artifacts
 	$(CARGO) clean
 
 test: ## Run tests with warnings treated as errors
 	RUSTFLAGS="$(RUST_FLAGS)" $(CARGO) test $(TEST_FLAGS) $(BUILD_JOBS)
+
+test-scripts: ## Run Python script tests
+	$(PYTEST) scripts/tests
 
 target/%/$(TARGET): ## Build binary in debug or release mode
 	$(CARGO) build $(BUILD_JOBS) $(if $(findstring release,$(@)),--release) --bin $(TARGET)
