@@ -32,6 +32,12 @@ On supported Linux GNU targets, install the prebuilt release archive with
 `cargo-binstall`:
 
 ```bash
+cargo install cargo-binstall
+```
+
+Then install Dear Diary:
+
+```bash
 cargo binstall dear-diary
 ```
 

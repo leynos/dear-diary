@@ -51,6 +51,26 @@ def test_load_package_version_resolves_workspace_version(tmp_path: Path) -> None
     assert version == "0.1.0"
 
 
+def test_load_package_version_reports_consistent_manifest_error(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "Cargo.toml").write_text("[workspace]\n", encoding="utf-8")
+    crate_dir = tmp_path / "crates" / "dear-diary"
+    crate_dir.mkdir(parents=True)
+    cargo_toml_path = crate_dir / "Cargo.toml"
+    cargo_toml_path.write_text(
+        """
+[package]
+name = "dear-diary"
+version.workspace = true
+""".strip(),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="invalid or missing package version"):
+        load_package_version(tmp_path, cargo_toml_path.relative_to(tmp_path))
+
+
 def test_dear_diary_manifest_defines_binstall_metadata() -> None:
     manifest = (PROJECT_ROOT / "crates" / "dear-diary" / "Cargo.toml").read_text(
         encoding="utf-8"
