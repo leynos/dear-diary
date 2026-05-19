@@ -72,7 +72,10 @@ jobs:
       - name: Add release target
         run: rustup target add ${{ matrix.target }}
       - name: Build release binary
-        run: cross build --release --target ${{ matrix.target }} --package ${{ env.PACKAGE_NAME }} --bin ${{ env.PACKAGE_NAME }}
+        run: |
+          set -euo pipefail
+          cross build --release --target ${{ matrix.target }} --package ${{ env.PACKAGE_NAME }} --bin ${{ env.PACKAGE_NAME }}
+          echo "metric=release_build_complete target=${{ matrix.target }} os=${{ matrix.os }} arch=${{ matrix.arch }}"
       - name: Prepare artifact
         env:
           INPUT_PACKAGE_NAME: ${{ env.PACKAGE_NAME }}
@@ -112,6 +115,7 @@ jobs:
               echo "Uploading ${file}"
               gh release upload "${{ github.ref_name }}" "$file" --clobber
               uploaded_count=$((uploaded_count + 1))
+              echo "metric=release_asset_uploaded count=${uploaded_count} file=${file}"
             done
           done
           echo "Uploaded ${uploaded_count} release assets."

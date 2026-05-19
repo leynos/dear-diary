@@ -25,10 +25,13 @@ Prepare one Linux release artefact set::
 from __future__ import annotations
 
 import hashlib
+import logging
 import shutil
 import tarfile
 from dataclasses import dataclass
 from pathlib import Path
+
+logger = logging.getLogger("release_support.packaging")
 
 
 @dataclass(frozen=True)
@@ -131,9 +134,15 @@ def write_sha256_manifest(path: Path) -> Path:
     >>> manifest.name
     'dear-diary-linux-x86_64.sha256'
     """
+    logger.info("operation=write_sha256_manifest phase=start path=%s", path)
     digest = hashlib.sha256(path.read_bytes()).hexdigest()
     manifest_path = path.with_name(f"{path.name}.sha256")
     manifest_path.write_text(f"{digest}  {path.name}\n", encoding="utf-8")
+    logger.info(
+        "operation=write_sha256_manifest phase=complete path=%s manifest=%s",
+        path,
+        manifest_path,
+    )
     return manifest_path
 
 
@@ -182,6 +191,18 @@ def prepare_artifacts(request: ArtifactRequest) -> list[Path]:
     >>> len(outputs)  # doctest: +SKIP
     4
     """
+    logger.info(
+        (
+            "operation=prepare_artifacts phase=start project_root=%s package=%s "
+            "target=%s os=%s arch=%s binstall=%s"
+        ),
+        request.project_root,
+        request.package_name,
+        request.target,
+        request.os_name,
+        request.arch,
+        request.cargo_binstall_archive,
+    )
     artifact_dir = request.project_root / "artifacts" / (
         f"{request.os_name}-{request.arch}"
     )
@@ -196,6 +217,11 @@ def prepare_artifacts(request: ArtifactRequest) -> list[Path]:
 
     artifact_dir.mkdir(parents=True, exist_ok=True)
     copied_binary = artifact_dir / binary_name
+    logger.info(
+        "operation=prepare_artifacts phase=copy source=%s destination=%s",
+        binary_path,
+        copied_binary,
+    )
     shutil.copy2(binary_path, copied_binary)
 
     outputs = [copied_binary, write_sha256_manifest(copied_binary)]
@@ -203,7 +229,21 @@ def prepare_artifacts(request: ArtifactRequest) -> list[Path]:
         archive_path = artifact_dir / (
             f"{request.package_name}-{request.version}-{request.target}.tar.gz"
         )
+        logger.info(
+            "operation=prepare_artifacts phase=archive source=%s archive=%s",
+            binary_path,
+            archive_path,
+        )
         with tarfile.open(archive_path, "w:gz") as archive:
             archive.add(binary_path, arcname=f"{request.package_name}{request.ext}")
         outputs.extend([archive_path, write_sha256_manifest(archive_path)])
+    else:
+        logger.info(
+            "operation=prepare_artifacts phase=skip_archive reason=binstall_disabled target=%s",
+            request.target,
+        )
+    logger.info(
+        "operation=prepare_artifacts phase=complete metric=generated_outputs count=%d",
+        len(outputs),
+    )
     return outputs

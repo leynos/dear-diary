@@ -29,6 +29,7 @@ Prepare one release artefact set::
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import Annotated
 
@@ -37,6 +38,9 @@ from cyclopts import App, Parameter
 
 from release_packaging import ArtifactRequest, prepare_artifacts
 from release_version import assert_tag_matches_version, load_package_version
+
+logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
+logger = logging.getLogger("release_support")
 
 app = App(config=cyclopts.config.Env("INPUT_", command=False))
 
@@ -86,8 +90,28 @@ def verify_version(
     ... )  # doctest: +SKIP
     """
     root = project_root.resolve()
-    cargo_version = load_package_version(root, cargo_toml_path)
-    assert_tag_matches_version(github_ref_name, cargo_version)
+    logger.info(
+        "operation=verify_version phase=start project_root=%s cargo_toml_path=%s tag=%s",
+        root,
+        cargo_toml_path,
+        github_ref_name,
+    )
+    try:
+        cargo_version = load_package_version(root, cargo_toml_path)
+        assert_tag_matches_version(github_ref_name, cargo_version)
+    except Exception:
+        logger.exception(
+            "operation=verify_version phase=failed project_root=%s cargo_toml_path=%s tag=%s",
+            root,
+            cargo_toml_path,
+            github_ref_name,
+        )
+        raise
+    logger.info(
+        "operation=verify_version phase=complete tag=%s cargo_version=%s",
+        github_ref_name,
+        cargo_version,
+    )
     print(f"Release tag {github_ref_name.removeprefix('v')} matches Cargo.toml.")
 
 
@@ -157,17 +181,50 @@ def prepare_artifact(
     """
     root = project_root.resolve()
     release_version = version.removeprefix("v")
-    outputs = prepare_artifacts(
-        ArtifactRequest(
-            project_root=root,
-            package_name=package_name,
-            version=release_version,
-            target=target,
-            os_name=os_name,
-            arch=arch,
-            ext=ext,
-            cargo_binstall_archive=cargo_binstall_archive,
+    logger.info(
+        (
+            "operation=prepare_artifact phase=start project_root=%s package=%s "
+            "version=%s target=%s os=%s arch=%s binstall=%s"
+        ),
+        root,
+        package_name,
+        release_version,
+        target,
+        os_name,
+        arch,
+        cargo_binstall_archive,
+    )
+    try:
+        outputs = prepare_artifacts(
+            ArtifactRequest(
+                project_root=root,
+                package_name=package_name,
+                version=release_version,
+                target=target,
+                os_name=os_name,
+                arch=arch,
+                ext=ext,
+                cargo_binstall_archive=cargo_binstall_archive,
+            )
         )
+    except Exception:
+        logger.exception(
+            (
+                "operation=prepare_artifact phase=failed project_root=%s package=%s "
+                "version=%s target=%s os=%s arch=%s binstall=%s"
+            ),
+            root,
+            package_name,
+            release_version,
+            target,
+            os_name,
+            arch,
+            cargo_binstall_archive,
+        )
+        raise
+    logger.info(
+        "operation=prepare_artifact phase=complete metric=release_artifacts_prepared count=%d",
+        len(outputs),
     )
     print(f"Prepared {len(outputs)} release artefacts:")
     for output in outputs:

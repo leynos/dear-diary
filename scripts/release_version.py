@@ -18,8 +18,11 @@ Validate a tag before publishing::
 
 from __future__ import annotations
 
+import logging
 import tomllib
 from pathlib import Path
+
+logger = logging.getLogger("release_support.version")
 
 
 def load_package_version(project_root: Path, cargo_toml_path: Path) -> str:
@@ -56,6 +59,11 @@ def load_package_version(project_root: Path, cargo_toml_path: Path) -> str:
     >>> load_package_version(Path("."), Path("crates/dear-diary/Cargo.toml"))
     '0.1.0'
     """
+    logger.info(
+        "operation=load_package_version phase=start project_root=%s cargo_toml_path=%s",
+        project_root,
+        cargo_toml_path,
+    )
     root_manifest = tomllib.loads(
         (project_root / "Cargo.toml").read_text(encoding="utf-8")
     )
@@ -72,7 +80,16 @@ def load_package_version(project_root: Path, cargo_toml_path: Path) -> str:
             else None
         )
     if not isinstance(version, str) or not version:
+        logger.error(
+            "operation=load_package_version phase=invalid project_root=%s cargo_toml_path=%s",
+            project_root,
+            cargo_toml_path,
+        )
         raise ValueError("invalid or missing package version in manifests")
+    logger.info(
+        "operation=load_package_version phase=complete cargo_version=%s",
+        version,
+    )
     return version
 
 
@@ -101,10 +118,24 @@ def assert_tag_matches_version(tag_name: str, cargo_version: str) -> None:
     >>> assert_tag_matches_version("v0.1.0", "0.1.0")
     >>> assert_tag_matches_version("0.1.0", "0.1.0")
     """
+    logger.info(
+        "operation=assert_tag_matches_version phase=start tag=%s cargo_version=%s",
+        tag_name,
+        cargo_version,
+    )
     tag_version = tag_name.removeprefix("v")
     if tag_version != cargo_version:
         msg = (
             f"Tag version {tag_version} does not match Cargo.toml version "
             f"{cargo_version}"
         )
+        logger.error(
+            "operation=assert_tag_matches_version phase=mismatch tag_version=%s cargo_version=%s",
+            tag_version,
+            cargo_version,
+        )
         raise ValueError(msg)
+    logger.info(
+        "operation=assert_tag_matches_version phase=complete tag_version=%s",
+        tag_version,
+    )
