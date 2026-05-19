@@ -26,6 +26,24 @@ Before installing Dear Diary, ensure the following requirements are met:
 
 ## Installation
 
+### Installing with cargo-binstall
+
+On supported Linux GNU targets, install the prebuilt release archive with
+`cargo-binstall`:
+
+```bash
+cargo install cargo-binstall
+```
+
+Then install Dear Diary:
+
+```bash
+cargo binstall dear-diary
+```
+
+The release workflow publishes `cargo-binstall` archives for Linux x86_64 and
+aarch64 targets. For other targets, build from source.
+
 ### Building from source
 
 Clone the repository and build the release binary:
