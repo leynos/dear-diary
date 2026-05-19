@@ -86,8 +86,8 @@ Linux development builds also require `clang` and `mold` on `PATH`. If Cargo
 reports an unknown codegen backend, a missing `rustc-codegen-cranelift`
 component, or a linker error mentioning `mold`, check these prerequisites
 before investigating the workspace itself. CI disables Cranelift only for
-coverage generation because LLVM coverage instrumentation expects the standard
-LLVM backend.
+coverage generation through the shared coverage action because LLVM coverage
+instrumentation expects the standard LLVM backend.
 
 ## Configuration
 
