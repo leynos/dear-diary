@@ -39,7 +39,9 @@ let client = Qdrant::from_url("http://localhost:6334")
 
 ### Creating a Collection
 
-Qdrant organizes data into [collections][collections] of [points][points].
+Qdrant organizes data into
+[collections](https://qdrant.tech/documentation/concepts/collections/) of
+[points](https://qdrant.tech/documentation/concepts/points/).
 
 ```rust
 use qdrant_client::qdrant::{CreateCollectionBuilder, Distance, VectorParamsBuilder};
@@ -217,10 +219,7 @@ snapshots, consult the extended `Qdrant` client methods.
 
 ## Further reading
 
-- [Collections][collections]
-- [Points][points]
+- [Collections](https://qdrant.tech/documentation/concepts/collections/)
+- [Points](https://qdrant.tech/documentation/concepts/points/)
 - [Payload](https://qdrant.tech/documentation/concepts/payload/)
 - [Search](https://qdrant.tech/documentation/concepts/search/)
-
-[collections]: https://qdrant.tech/documentation/concepts/collections/
-[points]: https://qdrant.tech/documentation/concepts/points/

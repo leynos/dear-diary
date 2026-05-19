@@ -69,6 +69,26 @@ export COLLECTION_NAME="my-memories"
 Connect via MCP stdio transport. The server speaks JSON-RPC 2.0, like all
 well-mannered protocols should.
 
+## Toolchain prerequisites
+
+This workspace uses the pinned Nightly toolchain from `rust-toolchain.toml`.
+Development builds use the Cranelift code generation backend, and Linux
+`x86_64-unknown-linux-gnu` builds link through `clang` with `mold`.
+
+Install the pinned Rust toolchain components with:
+
+```bash
+rustup toolchain install nightly-2025-12-10
+rustup component add rustc-codegen-cranelift --toolchain nightly-2025-12-10
+```
+
+Linux development builds also require `clang` and `mold` on `PATH`. If Cargo
+reports an unknown codegen backend, a missing `rustc-codegen-cranelift`
+component, or a linker error mentioning `mold`, check these prerequisites
+before investigating the workspace itself. CI disables Cranelift only for
+coverage generation because LLVM coverage instrumentation expects the standard
+LLVM backend.
+
 ## Configuration
 
 Dear Diary reads from environment variables or a `.env` file:

@@ -1136,11 +1136,12 @@ i18n-embed = { version = "0.16", features = ["fluent-system", "desktop-requester
 unic-langid = "0.9"
 ```
 
-The crate exposes the embedded assets via the [`Localizations`] helper. This
-type implements `i18n_embed::I18nAssets`, allowing applications with existing
-Fluent infrastructure to load resources into their own
-[`FluentLanguageLoader`]. Libraries without a localization framework can rely
-on the built-in loader and request a different language at runtime:
+The crate exposes the embedded assets via the
+[`Localizations`](https://docs.rs/rstest-bdd/latest/rstest_bdd/localization/)
+helper. This type implements `i18n_embed::I18nAssets`, allowing applications
+with existing Fluent infrastructure to load resources into their own
+`FluentLanguageLoader`. Libraries without a localization framework can rely on
+the built-in loader and request a different language at runtime:
 
 ```rust,no_run
 # fn scope_locale() -> Result<(), rstest_bdd::localization::LocalizationError> {
@@ -1158,10 +1159,6 @@ translation and continues to fall back to English when a requested locale is
 not shipped with the crate. Procedural macro diagnostics remain in English so
 compile-time output stays deterministic regardless of the host machine’s
 language settings.
-
-[`Localizations`]: https://docs.rs/rstest-bdd/latest/rstest_bdd/localization/
-[`FluentLanguageLoader`]:
-https://docs.rs/i18n-embed/latest/i18n_embed/fluent/struct.FluentLanguageLoader.html
 
 ## Diagnostic tooling
 
