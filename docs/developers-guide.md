@@ -25,11 +25,12 @@ The pinned toolchain must include these Rust components:
 - `clippy`
 - `rustc-codegen-cranelift`
 
-Install or repair the pinned toolchain with:
+Install or repair the pinned toolchain using `rust-toolchain.toml` as the
+channel source of truth:
 
 ```bash
-rustup toolchain install nightly-2025-12-10
-rustup component add rustc-codegen-cranelift --toolchain nightly-2025-12-10
+rustup toolchain install
+rustup component add rustc-codegen-cranelift
 ```
 
 Linux `x86_64-unknown-linux-gnu` builds link through `clang` with `mold`:
@@ -42,7 +43,7 @@ rustflags = ["-C", "link-arg=-fuse-ld=mold"]
 
 Install `clang` and `mold` before running local Linux builds that use that host
 target. In GitHub Actions, the CI and release workflows install both packages
-before invoking Cargo.
+on Linux runners before invoking Cargo.
 
 Coverage generation is the intentional exception to Cranelift. `cargo-llvm-cov`
 requires LLVM coverage instrumentation, so CI uses the shared
@@ -55,8 +56,8 @@ unstable profile setting before coverage starts.
 Any change to `.cargo/config.toml`, `rust-toolchain.toml`, or the build-related
 GitHub Actions wiring must include script-test coverage that verifies the
 configuration contract. At minimum, tests should cover the selected codegen
-backend, the Cranelift component, the Linux linker settings, CI installation of
-`clang` and `mold`, and the coverage action carve-out.
+backend, the Cranelift component, the Linux linker settings, guarded CI
+installation of `clang` and `mold`, and the coverage action carve-out.
 
 ## Release workflow
 

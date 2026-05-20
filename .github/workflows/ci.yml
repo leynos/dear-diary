@@ -18,10 +18,12 @@ jobs:
       - name: Setup Rust
         uses: leynos/shared-actions/.github/actions/setup-rust@d400b079fb6a8fa92f7e7b6c57f3d1c92a4b2d54
       - name: Install mold linker
+        if: runner.os == 'Linux'
         run: |
           set -euo pipefail
-          sudo apt-get update
-          sudo apt-get install --yes clang mold
+          export DEBIAN_FRONTEND=noninteractive
+          sudo apt-get update \
+            && sudo apt-get install --yes --no-install-recommends clang mold
       - name: Format
         run: make check-fmt
       - name: Markdown lint

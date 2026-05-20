@@ -41,7 +41,7 @@ def test_toolchain_installs_cranelift_component() -> None:
     """Verify the pinned Rust toolchain includes Cranelift codegen."""
     toolchain = load_toml(RUST_TOOLCHAIN)["toolchain"]
 
-    assert toolchain["channel"] == "nightly-2025-12-10"
+    assert toolchain["channel"].startswith("nightly-")
     assert "rustfmt" in toolchain["components"]
     assert "clippy" in toolchain["components"]
     assert "rustc-codegen-cranelift" in toolchain["components"]
@@ -53,7 +53,12 @@ def test_ci_installs_linker_tools_and_uses_coverage_carve_out() -> None:
 
     assert f"setup-rust@{SHARED_ACTIONS_REVISION}" in workflow
     assert f"generate-coverage@{SHARED_ACTIONS_REVISION}" in workflow
-    assert "sudo apt-get install --yes clang mold" in workflow
+    assert "if: runner.os == 'Linux'" in workflow
+    assert "export DEBIAN_FRONTEND=noninteractive" in workflow
+    assert (
+        "sudo apt-get install --yes --no-install-recommends clang mold"
+        in workflow
+    )
     assert "CARGO_PROFILE_DEV_CODEGEN_BACKEND" not in workflow
 
 
@@ -62,7 +67,12 @@ def test_release_workflow_installs_linker_tools() -> None:
     workflow = RELEASE_WORKFLOW.read_text(encoding="utf-8")
 
     assert f"setup-rust@{SHARED_ACTIONS_REVISION}" in workflow
-    assert "sudo apt-get install --yes clang mold" in workflow
+    assert "if: runner.os == 'Linux'" in workflow
+    assert "export DEBIAN_FRONTEND=noninteractive" in workflow
+    assert (
+        "sudo apt-get install --yes --no-install-recommends clang mold"
+        in workflow
+    )
     assert 'RUSTFLAGS: ""' in workflow
 
 
@@ -75,5 +85,6 @@ def test_build_configuration_is_developer_documentation() -> None:
     assert "Cranelift code generation backend" in developer_docs
     assert "`clang` with `mold`" in developer_docs
     assert "LLVM backend carve-out" in developer_docs
+    assert "nightly-2025-12-10" not in developer_docs
     assert "Toolchain prerequisites" not in readme
     assert "rustc-codegen-cranelift" not in readme
