@@ -2,6 +2,62 @@
 
 This guide covers release automation and local validation for contributors.
 
+## Build configuration
+
+The workspace uses the pinned Nightly toolchain declared in
+`rust-toolchain.toml`. Nightly is required for the Rust 2024 edition and for
+Cargo's unstable `codegen-backend` profile configuration.
+
+Development builds use the Cranelift code generation backend through
+`.cargo/config.toml`:
+
+```toml
+[unstable]
+codegen-backend = true
+
+[profile.dev]
+codegen-backend = "cranelift"
+```
+
+The pinned toolchain must include these Rust components:
+
+- `rustfmt`
+- `clippy`
+- `rustc-codegen-cranelift`
+
+Install or repair the pinned toolchain with:
+
+```bash
+rustup toolchain install nightly-2025-12-10
+rustup component add rustc-codegen-cranelift --toolchain nightly-2025-12-10
+```
+
+Linux `x86_64-unknown-linux-gnu` builds link through `clang` with `mold`:
+
+```toml
+[target.x86_64-unknown-linux-gnu]
+linker = "clang"
+rustflags = ["-C", "link-arg=-fuse-ld=mold"]
+```
+
+Install `clang` and `mold` before running local Linux builds that use that host
+target. In GitHub Actions, the CI and release workflows install both packages
+before invoking Cargo.
+
+Coverage generation is the intentional exception to Cranelift. `cargo-llvm-cov`
+requires LLVM coverage instrumentation, so CI uses the shared
+`generate-coverage` action revision that carries the LLVM backend carve-out for
+coverage runs. Do not add a step-level
+`CARGO_PROFILE_DEV_CODEGEN_BACKEND=llvm` override: that environment also
+affects the action's internal tool installation and can make Cargo reject the
+unstable profile setting before coverage starts.
+
+Any change to `.cargo/config.toml`, `rust-toolchain.toml`, or the build-related
+GitHub Actions wiring must include script-test coverage that verifies the
+configuration contract. At minimum, tests should cover the selected codegen
+backend, the Cranelift component, the Linux linker settings, CI installation of
+`clang` and `mold`, and the coverage action carve-out.
+
 ## Release workflow
 
 The release workflow is defined in `.github/workflows/release.yml`. It runs
