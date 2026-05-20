@@ -23,6 +23,10 @@ RELEASE_WORKFLOW = PROJECT_ROOT / ".github" / "workflows" / "release.yml"
 RUST_TOOLCHAIN = PROJECT_ROOT / "rust-toolchain.toml"
 USER_GUIDE = PROJECT_ROOT / "docs" / "users-guide.md"
 SHARED_ACTIONS_REVISION = "d400b079fb6a8fa92f7e7b6c57f3d1c92a4b2d54"
+HARDENED_LINKER_INSTALL_COMMAND = (
+    "apt-get update && sudo apt-get install --yes --no-install-recommends "
+    "clang mold"
+)
 
 
 def named_workflow_step(workflow: str, name: str) -> str:
@@ -40,6 +44,22 @@ def named_workflow_step(workflow: str, name: str) -> str:
     matches = pattern.findall(workflow)
     assert len(matches) == 1
     return matches[0]
+
+
+def normalise_shell_continuations(script: str) -> str:
+    """Collapse shell line continuations so command sequences are assertable.
+
+    Parameters
+    ----------
+    script
+        Shell script text from a workflow step.
+
+    Returns
+    -------
+    str
+        Script text with ``\\ &&`` line continuations collapsed.
+    """
+    return re.sub(r"\s*\\\n\s*&&\s*", " && ", script)
 
 
 def load_text(path: Path) -> str:
@@ -144,9 +164,8 @@ def test_ci_installs_linker_tools_and_uses_coverage_carve_out() -> None:
     linker_step = named_workflow_step(workflow, "Install mold linker")
     assert "if: runner.os == 'Linux'" in linker_step
     assert "export DEBIAN_FRONTEND=noninteractive" in linker_step
-    assert (
-        "sudo apt-get install --yes --no-install-recommends clang mold"
-        in linker_step
+    assert HARDENED_LINKER_INSTALL_COMMAND in normalise_shell_continuations(
+        linker_step
     )
     assert "CARGO_PROFILE_DEV_CODEGEN_BACKEND" not in workflow
 
@@ -159,9 +178,8 @@ def test_release_workflow_installs_linker_tools() -> None:
     linker_step = named_workflow_step(workflow, "Install mold linker")
     assert "if: runner.os == 'Linux'" in linker_step
     assert "export DEBIAN_FRONTEND=noninteractive" in linker_step
-    assert (
-        "sudo apt-get install --yes --no-install-recommends clang mold"
-        in linker_step
+    assert HARDENED_LINKER_INSTALL_COMMAND in normalise_shell_continuations(
+        linker_step
     )
     assert 'RUSTFLAGS: ""' in workflow
 
@@ -180,7 +198,7 @@ def test_build_configuration_is_developer_documentation() -> None:
     assert "shared `generate-coverage` action" in developer_docs
     assert "LLVM coverage" in developer_docs
     assert "instrumentation" in developer_docs
-    assert "nightly-2025-12-10" not in developer_docs
+    assert re.search(r"nightly-\d{4}-\d{2}-\d{2}", developer_docs) is None
     assert "## Core functionality" in readme
     assert "Toolchain prerequisites" not in readme
     assert "rustc-codegen-cranelift" not in readme
