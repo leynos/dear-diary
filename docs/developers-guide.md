@@ -45,13 +45,17 @@ Install `clang` and `mold` before running local Linux builds that use that host
 target. In GitHub Actions, the CI and release workflows install both packages
 on Linux runners before invoking Cargo.
 
-Coverage generation is the intentional exception to Cranelift. `cargo-llvm-cov`
-requires LLVM coverage instrumentation, so CI uses the shared
-`generate-coverage` action revision that carries the LLVM backend carve-out for
-coverage runs. Do not add a step-level
-`CARGO_PROFILE_DEV_CODEGEN_BACKEND=llvm` override: that environment also
-affects the action's internal tool installation and can make Cargo reject the
-unstable profile setting before coverage starts.
+### CI and coverage
+
+Coverage generation is the intentional exception to Cranelift. CI measures Rust
+coverage with the shared `generate-coverage` action. Coverage runs use the LLVM
+backend instead of Cranelift because `cargo-llvm-cov` relies on LLVM coverage
+instrumentation.
+
+Keep that LLVM instrumentation carve-out inside the shared coverage action. Do
+not add a workflow-level or step-level `CARGO_PROFILE_DEV_CODEGEN_BACKEND=llvm`
+override: that environment can leak into tool installation before coverage
+starts.
 
 Any change to `.cargo/config.toml`, `rust-toolchain.toml`, or the build-related
 GitHub Actions wiring must include script-test coverage that verifies the

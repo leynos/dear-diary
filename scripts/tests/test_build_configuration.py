@@ -23,7 +23,15 @@ SHARED_ACTIONS_REVISION = "d400b079fb6a8fa92f7e7b6c57f3d1c92a4b2d54"
 
 
 def load_toml(path: Path) -> dict[str, object]:
-    """Load a TOML file from the repository as a dictionary."""
+    """Load a TOML file from the repository as a dictionary.
+
+    Raises
+    ------
+    FileNotFoundError
+        If `path` does not exist.
+    tomllib.TOMLDecodeError
+        If `path` contains invalid TOML.
+    """
     return tomllib.loads(path.read_text(encoding="utf-8"))
 
 
@@ -81,16 +89,17 @@ def test_build_configuration_is_developer_documentation() -> None:
     """Verify build-system details live in developer documentation."""
     developer_docs = DEVELOPERS_GUIDE.read_text(encoding="utf-8")
     readme = README.read_text(encoding="utf-8")
-    user_guide = USER_GUIDE.read_text(encoding="utf-8")
 
     assert "## Build configuration" in developer_docs
+    assert "### CI and coverage" in developer_docs
     assert "Cranelift code generation backend" in developer_docs
     assert "`clang` with `mold`" in developer_docs
-    assert "LLVM backend carve-out" in developer_docs
+    assert "LLVM instrumentation carve-out" in developer_docs
+    assert "shared `generate-coverage` action" in developer_docs
+    assert "LLVM coverage" in developer_docs
+    assert "instrumentation" in developer_docs
     assert "nightly-2025-12-10" not in developer_docs
     assert "## Core functionality" in readme
     assert "Toolchain prerequisites" not in readme
     assert "rustc-codegen-cranelift" not in readme
-    assert "CI and coverage" in user_guide
-    assert "shared `generate-coverage` action" in user_guide
-    assert "LLVM coverage instrumentation" in user_guide
+    assert "CI and coverage" not in USER_GUIDE.read_text(encoding="utf-8")

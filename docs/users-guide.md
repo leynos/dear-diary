@@ -64,17 +64,6 @@ Run the test suite to confirm the installation:
 cargo test --workspace
 ```
 
-### CI and coverage
-
-CI measures Rust coverage with the shared `generate-coverage` action. Coverage
-runs use the LLVM backend instead of Cranelift because `cargo-llvm-cov` relies
-on LLVM coverage instrumentation.
-
-Keep that LLVM instrumentation carve-out inside the shared coverage action. Do
-not add a workflow-level or step-level `CARGO_PROFILE_DEV_CODEGEN_BACKEND=llvm`
-override: that environment can leak into tool installation before coverage
-starts.
-
 ## Configuration
 
 Dear Diary is configured through environment variables. These may be set
