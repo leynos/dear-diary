@@ -11,6 +11,8 @@ from __future__ import annotations
 import tomllib
 from pathlib import Path
 
+import pytest
+
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 CARGO_CONFIG = PROJECT_ROOT / ".cargo" / "config.toml"
 CI_WORKFLOW = PROJECT_ROOT / ".github" / "workflows" / "ci.yml"
@@ -20,6 +22,19 @@ RELEASE_WORKFLOW = PROJECT_ROOT / ".github" / "workflows" / "release.yml"
 RUST_TOOLCHAIN = PROJECT_ROOT / "rust-toolchain.toml"
 USER_GUIDE = PROJECT_ROOT / "docs" / "users-guide.md"
 SHARED_ACTIONS_REVISION = "d400b079fb6a8fa92f7e7b6c57f3d1c92a4b2d54"
+
+
+def load_text(path: Path) -> str:
+    """Load a text file from the repository.
+
+    Raises
+    ------
+    FileNotFoundError
+        If `path` does not exist.
+    UnicodeDecodeError
+        If `path` is not valid UTF-8 text.
+    """
+    return path.read_text(encoding="utf-8")
 
 
 def load_toml(path: Path) -> dict[str, object]:
@@ -32,7 +47,22 @@ def load_toml(path: Path) -> dict[str, object]:
     tomllib.TOMLDecodeError
         If `path` contains invalid TOML.
     """
-    return tomllib.loads(path.read_text(encoding="utf-8"))
+    return tomllib.loads(load_text(path))
+
+
+def test_load_text_reports_missing_file(tmp_path: Path) -> None:
+    """Expose missing file failures from repository text reads."""
+    with pytest.raises(FileNotFoundError):
+        load_text(tmp_path / "missing.txt")
+
+
+def test_load_toml_reports_invalid_toml(tmp_path: Path) -> None:
+    """Expose TOML parse failures from repository configuration reads."""
+    invalid_toml = tmp_path / "invalid.toml"
+    invalid_toml.write_text("not = [valid\n", encoding="utf-8")
+
+    with pytest.raises(tomllib.TOMLDecodeError):
+        load_toml(invalid_toml)
 
 
 def test_cargo_config_enables_cranelift_and_mold_linking() -> None:
@@ -58,10 +88,11 @@ def test_toolchain_installs_cranelift_component() -> None:
 
 def test_ci_installs_linker_tools_and_uses_coverage_carve_out() -> None:
     """Verify CI installs linker tools and delegates coverage backend handling."""
-    workflow = CI_WORKFLOW.read_text(encoding="utf-8")
+    workflow = load_text(CI_WORKFLOW)
 
     assert f"setup-rust@{SHARED_ACTIONS_REVISION}" in workflow
     assert f"generate-coverage@{SHARED_ACTIONS_REVISION}" in workflow
+    assert "run: make test-scripts" in workflow
     assert "if: runner.os == 'Linux'" in workflow
     assert "export DEBIAN_FRONTEND=noninteractive" in workflow
     assert (
@@ -73,7 +104,7 @@ def test_ci_installs_linker_tools_and_uses_coverage_carve_out() -> None:
 
 def test_release_workflow_installs_linker_tools() -> None:
     """Verify release builds have the Linux linker prerequisites available."""
-    workflow = RELEASE_WORKFLOW.read_text(encoding="utf-8")
+    workflow = load_text(RELEASE_WORKFLOW)
 
     assert f"setup-rust@{SHARED_ACTIONS_REVISION}" in workflow
     assert "if: runner.os == 'Linux'" in workflow
@@ -87,8 +118,8 @@ def test_release_workflow_installs_linker_tools() -> None:
 
 def test_build_configuration_is_developer_documentation() -> None:
     """Verify build-system details live in developer documentation."""
-    developer_docs = DEVELOPERS_GUIDE.read_text(encoding="utf-8")
-    readme = README.read_text(encoding="utf-8")
+    developer_docs = load_text(DEVELOPERS_GUIDE)
+    readme = load_text(README)
 
     assert "## Build configuration" in developer_docs
     assert "### CI and coverage" in developer_docs
@@ -102,4 +133,4 @@ def test_build_configuration_is_developer_documentation() -> None:
     assert "## Core functionality" in readme
     assert "Toolchain prerequisites" not in readme
     assert "rustc-codegen-cranelift" not in readme
-    assert "CI and coverage" not in USER_GUIDE.read_text(encoding="utf-8")
+    assert "CI and coverage" not in load_text(USER_GUIDE)
