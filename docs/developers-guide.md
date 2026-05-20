@@ -23,14 +23,14 @@ The pinned toolchain must include these Rust components:
 
 - `rustfmt`
 - `clippy`
-- `rustc-codegen-cranelift`
+- `rustc-codegen-cranelift-preview`
 
 Install or repair the pinned toolchain using `rust-toolchain.toml` as the
 channel source of truth:
 
 ```bash
 rustup toolchain install
-rustup component add rustc-codegen-cranelift
+rustup component add rustc-codegen-cranelift-preview
 ```
 
 Linux `x86_64-unknown-linux-gnu` builds link through `clang` with `mold`:

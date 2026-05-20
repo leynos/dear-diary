@@ -44,7 +44,7 @@ def test_toolchain_installs_cranelift_component() -> None:
     assert toolchain["channel"].startswith("nightly-")
     assert "rustfmt" in toolchain["components"]
     assert "clippy" in toolchain["components"]
-    assert "rustc-codegen-cranelift" in toolchain["components"]
+    assert "rustc-codegen-cranelift-preview" in toolchain["components"]
 
 
 def test_ci_installs_linker_tools_and_uses_coverage_carve_out() -> None:

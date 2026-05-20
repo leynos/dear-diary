@@ -8,5 +8,5 @@ channel = "nightly-2025-12-10"
 components = [
     "rustfmt",
     "clippy",
-    "rustc-codegen-cranelift",
+    "rustc-codegen-cranelift-preview",
 ]
