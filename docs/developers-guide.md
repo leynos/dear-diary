@@ -2,6 +2,71 @@
 
 This guide covers release automation and local validation for contributors.
 
+## Build configuration
+
+The workspace uses the pinned Nightly toolchain declared in
+`rust-toolchain.toml`. Nightly is required for the Rust 2024 edition and for
+Cargo's unstable `codegen-backend` profile configuration.
+
+Development builds use the Cranelift code generation backend through
+`.cargo/config.toml`:
+
+```toml
+[unstable]
+codegen-backend = true
+
+[profile.dev]
+codegen-backend = "cranelift"
+```
+
+This follows the build profile adopted in Weaver and Gauss, where Cranelift for
+development code generation and `mold` for Linux linking produced useful build
+performance improvements without changing the release artefact contract.
+
+The pinned toolchain must include these Rust components:
+
+- `rustfmt`
+- `clippy`
+- `rustc-codegen-cranelift-preview`
+
+Install or repair the pinned toolchain using `rust-toolchain.toml` as the
+channel source of truth:
+
+```bash
+rustup toolchain install
+rustup component add rustc-codegen-cranelift-preview
+```
+
+Linux `x86_64-unknown-linux-gnu` builds link through `clang` with `mold`:
+
+```toml
+[target.x86_64-unknown-linux-gnu]
+linker = "clang"
+rustflags = ["-C", "link-arg=-fuse-ld=mold"]
+```
+
+Install `clang` and `mold` before running local Linux builds that use that host
+target. In GitHub Actions, the CI and release workflows install both packages
+on Linux runners before invoking Cargo.
+
+### CI and coverage
+
+Coverage generation is the intentional exception to Cranelift. CI measures Rust
+coverage with the shared `generate-coverage` action. Coverage runs use the LLVM
+backend instead of Cranelift because `cargo-llvm-cov` relies on LLVM coverage
+instrumentation.
+
+Keep that LLVM instrumentation carve-out inside the shared coverage action. Do
+not add a workflow-level or step-level `CARGO_PROFILE_DEV_CODEGEN_BACKEND=llvm`
+override: that environment can leak into tool installation before coverage
+starts.
+
+Any change to `.cargo/config.toml`, `rust-toolchain.toml`, or the build-related
+GitHub Actions wiring must include script-test coverage that verifies the
+configuration contract. At minimum, tests should cover the selected codegen
+backend, the Cranelift component, the Linux linker settings, guarded CI
+installation of `clang` and `mold`, and the coverage action carve-out.
+
 ## Release workflow
 
 The release workflow is defined in `.github/workflows/release.yml`. It runs

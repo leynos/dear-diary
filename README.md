@@ -18,7 +18,7 @@ something you have already forgotten a thousand times.
 
 **Dear Diary** understands.
 
-## What is this?
+## Core functionality
 
 Dear Diary is a [Model Context Protocol](https://modelcontextprotocol.io/)
 (MCP) server that provides AI coding agents with persistent semantic memory.

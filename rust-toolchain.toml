@@ -5,4 +5,8 @@
 # 2024 lands in stable Rust, this toolchain should be switched back to the
 # stable channel.
 channel = "nightly-2025-12-10"
-components = ["rustfmt", "clippy"]
+components = [
+    "rustfmt",
+    "clippy",
+    "rustc-codegen-cranelift-preview",
+]

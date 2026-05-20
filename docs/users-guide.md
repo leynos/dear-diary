@@ -411,7 +411,8 @@ This may take a few moments depending on network speed.
 ### Alternative models
 
 Configure a different model via the `EMBEDDING_MODEL` environment variable.
-Consult the [FastEmbed documentation][fastembed] for available models.
+Consult the [FastEmbed documentation](https://github.com/Qdrant/fastembed) for
+available models.
 
 ## Read-only mode
 
@@ -523,7 +524,8 @@ filtering on specific fields. When entries are stored with metadata, the
 specified fields become searchable through Qdrant's native filtering
 capabilities.
 
-**Tracking**: This limitation is tracked in [GitHub issue `#2`][filter-parsing-issue].
+**Tracking**: This limitation is tracked in
+[GitHub issue `#2`](https://github.com/leynos/dear-diary/issues/2).
 
 ______________________________________________________________________
 
@@ -533,6 +535,3 @@ ______________________________________________________________________
 
 [^3]: Arbitrary filter support requires additional configuration and is not
     enabled by default. See "Known limitations" for details.
-
-[fastembed]: https://github.com/Qdrant/fastembed
-[filter-parsing-issue]: https://github.com/leynos/dear-diary/issues/2
