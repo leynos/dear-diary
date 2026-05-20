@@ -45,12 +45,27 @@ def named_workflow_step(workflow: str, name: str) -> str:
 def load_text(path: Path) -> str:
     """Load a text file from the repository.
 
+    Parameters
+    ----------
+    path
+        Repository file path to read as UTF-8 text.
+
+    Returns
+    -------
+    str
+        The decoded file contents.
+
     Raises
     ------
     FileNotFoundError
         If `path` does not exist.
     UnicodeDecodeError
         If `path` is not valid UTF-8 text.
+
+    Examples
+    --------
+    >>> load_text(README).startswith("#")
+    True
     """
     return path.read_text(encoding="utf-8")
 
@@ -58,12 +73,27 @@ def load_text(path: Path) -> str:
 def load_toml(path: Path) -> dict[str, object]:
     """Load a TOML file from the repository as a dictionary.
 
+    Parameters
+    ----------
+    path
+        Repository TOML file path to read and parse.
+
+    Returns
+    -------
+    dict[str, object]
+        Parsed TOML document contents.
+
     Raises
     ------
     FileNotFoundError
         If `path` does not exist.
     tomllib.TOMLDecodeError
         If `path` contains invalid TOML.
+
+    Examples
+    --------
+    >>> load_toml(RUST_TOOLCHAIN)["toolchain"]["components"]
+    ['rustfmt', 'clippy', 'rustc-codegen-cranelift-preview']
     """
     return tomllib.loads(load_text(path))
 
@@ -144,6 +174,7 @@ def test_build_configuration_is_developer_documentation() -> None:
     assert "## Build configuration" in developer_docs
     assert "### CI and coverage" in developer_docs
     assert "Cranelift code generation backend" in developer_docs
+    assert "Weaver and Gauss" in developer_docs
     assert "`clang` with `mold`" in developer_docs
     assert "LLVM instrumentation carve-out" in developer_docs
     assert "shared `generate-coverage` action" in developer_docs

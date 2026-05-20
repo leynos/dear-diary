@@ -19,6 +19,10 @@ codegen-backend = true
 codegen-backend = "cranelift"
 ```
 
+This follows the build profile adopted in Weaver and Gauss, where Cranelift for
+development code generation and `mold` for Linux linking produced useful build
+performance improvements without changing the release artefact contract.
+
 The pinned toolchain must include these Rust components:
 
 - `rustfmt`
