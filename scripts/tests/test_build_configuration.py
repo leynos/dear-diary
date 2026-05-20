@@ -18,6 +18,7 @@ DEVELOPERS_GUIDE = PROJECT_ROOT / "docs" / "developers-guide.md"
 README = PROJECT_ROOT / "README.md"
 RELEASE_WORKFLOW = PROJECT_ROOT / ".github" / "workflows" / "release.yml"
 RUST_TOOLCHAIN = PROJECT_ROOT / "rust-toolchain.toml"
+USER_GUIDE = PROJECT_ROOT / "docs" / "users-guide.md"
 SHARED_ACTIONS_REVISION = "d400b079fb6a8fa92f7e7b6c57f3d1c92a4b2d54"
 
 
@@ -80,11 +81,16 @@ def test_build_configuration_is_developer_documentation() -> None:
     """Verify build-system details live in developer documentation."""
     developer_docs = DEVELOPERS_GUIDE.read_text(encoding="utf-8")
     readme = README.read_text(encoding="utf-8")
+    user_guide = USER_GUIDE.read_text(encoding="utf-8")
 
     assert "## Build configuration" in developer_docs
     assert "Cranelift code generation backend" in developer_docs
     assert "`clang` with `mold`" in developer_docs
     assert "LLVM backend carve-out" in developer_docs
     assert "nightly-2025-12-10" not in developer_docs
+    assert "## Core functionality" in readme
     assert "Toolchain prerequisites" not in readme
     assert "rustc-codegen-cranelift" not in readme
+    assert "CI and coverage" in user_guide
+    assert "shared coverage action" in user_guide
+    assert "LLVM coverage instrumentation" in user_guide
