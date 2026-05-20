@@ -48,6 +48,8 @@ pub(crate) fn visibility(
 
 #[cfg(test)]
 mod tests {
+    //! Unit tests for deprecation visibility threshold behaviour.
+
     use super::*;
 
     /// Test that active entries (no deprecation) are always visible.

@@ -13,6 +13,7 @@ jobs:
     env:
       CARGO_TERM_COLOR: always
       BUILD_PROFILE: debug
+      WHITAKER_INSTALLER_REV: f768c2e53c47df13658af1168a67851d388750bf
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
       - name: Setup Rust
@@ -37,6 +38,13 @@ jobs:
         uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78
       - name: Script tests
         run: make test-scripts
+      - name: Install Whitaker
+        run: |
+          cargo install --locked \
+            --git https://github.com/leynos/whitaker \
+            --rev "${WHITAKER_INSTALLER_REV}" \
+            whitaker-installer
+          whitaker-installer --cranelift
       - name: Lint
         run: make lint
       - name: Test and Measure Coverage

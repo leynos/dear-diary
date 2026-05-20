@@ -291,6 +291,8 @@ impl<C: QdrantConnector + 'static> ServerHandler for DiaryServer<C> {
 
 #[cfg(test)]
 mod tests {
+    //! Unit tests for server construction and collection-name resolution.
+
     use super::*;
     use dear_diary_config::{DEFAULT_EMBEDDING_MODEL, QdrantSettings, ToolSettings};
     use dear_diary_qdrant::MockQdrantConnector;

@@ -53,65 +53,38 @@ pub(crate) fn parse_remote_url(raw_url: &str) -> Result<RemoteInfo, ConfigError>
     let clean_path = without_prefix
         .strip_suffix(".git")
         .unwrap_or(without_prefix);
+    let segments = remote_path_segments(clean_path);
 
-    // Walk segments once, tracking first and last non-empty values.
-    let mut first_segment: Option<&str> = None;
-    let mut last_segment: Option<&str> = None;
-    let mut segment_count: usize = 0;
+    remote_info_from_segments(raw_url, &segments)
+}
 
-    for segment in clean_path.split('/').filter(|s| !s.is_empty()) {
-        if first_segment.is_none() {
-            first_segment = Some(segment);
-        }
-        last_segment = Some(segment);
-        segment_count += 1;
-    }
+/// Splits a remote path into meaningful owner/repository segments.
+fn remote_path_segments(clean_path: &str) -> Vec<&str> {
+    clean_path.split('/').filter(|s| !s.is_empty()).collect()
+}
 
-    match segment_count {
-        0 => Err(ConfigError::InterpolationContextError(format!(
+/// Builds remote metadata from parsed path segments.
+fn remote_info_from_segments(raw_url: &str, segments: &[&str]) -> Result<RemoteInfo, ConfigError> {
+    match segments {
+        [] => Err(ConfigError::InterpolationContextError(format!(
             concat!(
                 "Cannot extract repository from remote URL ",
                 "'{0}': path contains no segments"
             ),
             raw_url
         ))),
-        1 => {
-            // Single segment — repo only, no owner.
-            // SAFETY (logic): segment_count == 1 guarantees
-            // last_segment is Some (set during the loop above).
-            let repo = last_segment.ok_or_else(|| {
-                ConfigError::InterpolationContextError(format!(
-                    "Cannot extract repository from remote URL \
-                     '{raw_url}'"
-                ))
-            })?;
-            Ok(RemoteInfo {
-                owner: None,
-                repo: repo.to_owned(),
-            })
-        }
-        _ => {
+        [repo] => Ok(RemoteInfo {
+            owner: None,
+            repo: (*repo).to_owned(),
+        }),
+        [owner_raw, .., repo] => {
             // Two or more segments — first is owner, last is repo.
-            // SAFETY (logic): segment_count >= 2 guarantees both Some.
-            let owner_raw = first_segment.ok_or_else(|| {
-                ConfigError::InterpolationContextError(format!(
-                    "Cannot extract owner/repo from remote URL \
-                     '{raw_url}'"
-                ))
-            })?;
-            let repo = last_segment.ok_or_else(|| {
-                ConfigError::InterpolationContextError(format!(
-                    "Cannot extract owner/repo from remote URL \
-                     '{raw_url}'"
-                ))
-            })?;
-
             // Strip Source Hut tilde prefix from owner.
             let owner = owner_raw.strip_prefix('~').unwrap_or(owner_raw);
 
             Ok(RemoteInfo {
                 owner: Some(owner.to_owned()),
-                repo: repo.to_owned(),
+                repo: (*repo).to_owned(),
             })
         }
     }

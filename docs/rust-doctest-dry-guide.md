@@ -41,7 +41,7 @@ block found in the documentation comments[^3]:
 4. **Execution and Verification**: Finally, if compilation succeeds, the
    resulting executable is run. The test is considered to have passed if the
    program runs to completion without panicking. The executable is then
-   deleted.[^2]
+   deleted. [^2]
 
 The significance of this model cannot be overstated. It effectively transforms
 every doctest into a true integration test.[^6] The test code does not have
@@ -107,8 +107,8 @@ Doctests reside within documentation comments. Rust recognizes two types:
 denoted by triple back-ticks (```). While `rustdoc` defaults to Rust syntax,
 explicitly add the `rust` language specifier for clarity.[^3] A doctest
 "passes" when it compiles and runs without panicking. To assert specific
-outcomes, use the standard macros `assert!`, `assert_eq!`, and
-`assert_ne!`.[^3] <!-- markdownlint-enable MD013 -->
+outcomes, use the standard macros `assert!`, `assert_eq!`, and `assert_ne!`.[
+^3] <!-- markdownlint-enable MD013 -->
 
 ### 2.2 The philosophy of a good example
 
@@ -272,7 +272,7 @@ table provides a comparative reference for the most common doctest attributes.
 - `edition20xx`: This attribute allows an example to be tested against a
   specific Rust edition. This is important for crates that support multiple
   editions and need to demonstrate edition-specific features or migration
-  paths.[^4]
+  paths. [^4]
 
 ## The DRY principle in doctests: managing shared and complex logic
 
@@ -401,10 +401,10 @@ builds.[^13]
 pub struct UnixSocket;
 ```
 
-This `any` directive ensures the struct is compiled either when the target OS
-is `unix` OR when `rustdoc` is running. This correctly makes the item visible
-in the generated HTML. However, it is crucial to understand that this **does
-not** make the doctest for `UnixSocket` pass on non-Unix platforms.
+This `any` directive ensures the struct is compiled either when the target OS is
+ `unix` OR when `rustdoc` is running. This correctly makes the item visible in
+the generated HTML. However, it is crucial to understand that this **does not**
+make the doctest for `UnixSocket` pass on non-Unix platforms.
 
 This distinction highlights the "cfg duality." The `#[cfg(doc)]` attribute
 controls the *table of contents* of the documentation; it determines which

@@ -305,6 +305,8 @@ fn env_var_bool(name: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
+    //! Unit tests for configuration defaults and validation rules.
+
     use super::*;
     use rstest::rstest;
 

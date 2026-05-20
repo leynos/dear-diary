@@ -364,11 +364,11 @@ The deprecation system provides graceful memory management:
 
 _Table 6: Deprecation states and visibility._
 
-| State               | Age        | Default visibility | With `include_deprecated` |
-| ------------------- | ---------- | ------------------ | ------------------------- |
-| Active              | —          | Visible            | Visible                   |
-| Recently deprecated | < 7 days   | Visible (flagged)  | Visible (flagged)         |
-| Long deprecated     | ≥ 7 days   | Hidden             | Visible (flagged)         |
+| State               | Age      | Default visibility | With `include_deprecated` |
+| ------------------- | -------- | ------------------ | ------------------------- |
+| Active              | —        | Visible            | Visible                   |
+| Recently deprecated | < 7 days | Visible (flagged)  | Visible (flagged)         |
+| Long deprecated     | ≥ 7 days | Hidden             | Visible (flagged)         |
 
 Flagged entries are prefixed with `[DEPRECATED]` in search results.
 

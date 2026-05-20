@@ -4,7 +4,7 @@
 //! allowing us to test deprecation filtering and other server behaviour
 //! without needing a real Qdrant instance.
 
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use rmcp::handler::server::wrapper::Parameters;
 use rmcp::model::Content;
@@ -23,11 +23,15 @@ const ONE_DAY_SECS: i64 = 24 * 3600;
 
 /// Helper to get current Unix timestamp for tests.
 fn current_timestamp() -> i64 {
-    #[expect(clippy::cast_possible_wrap, reason = "Unix timestamp fits in i64")]
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_secs() as i64)
-        .expect("System time should be after Unix epoch")
+        .map_or(0, duration_secs_i64)
+}
+
+/// Converts a Unix timestamp duration into signed seconds for test fixtures.
+#[expect(clippy::cast_possible_wrap, reason = "Unix timestamp fits in i64")]
+fn duration_secs_i64(duration: Duration) -> i64 {
+    duration.as_secs() as i64
 }
 
 /// Helper to extract text from Content, panics if not text content.

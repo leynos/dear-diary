@@ -37,6 +37,17 @@ rustup toolchain install
 rustup component add rustc-codegen-cranelift-preview
 ```
 
+`make lint` runs Rustdoc, Clippy, and Whitaker. Install Whitaker through the
+upstream installer before running the full lint target locally:
+
+```bash
+cargo install --locked \
+  --git https://github.com/leynos/whitaker \
+  --rev f768c2e53c47df13658af1168a67851d388750bf \
+  whitaker-installer
+whitaker-installer --cranelift
+```
+
 Linux `x86_64-unknown-linux-gnu` builds link through `clang` with `mold`:
 
 ```toml
