@@ -8,6 +8,7 @@ tests directly.
 
 from __future__ import annotations
 
+import re
 import tomllib
 from pathlib import Path
 
@@ -22,6 +23,23 @@ RELEASE_WORKFLOW = PROJECT_ROOT / ".github" / "workflows" / "release.yml"
 RUST_TOOLCHAIN = PROJECT_ROOT / "rust-toolchain.toml"
 USER_GUIDE = PROJECT_ROOT / "docs" / "users-guide.md"
 SHARED_ACTIONS_REVISION = "d400b079fb6a8fa92f7e7b6c57f3d1c92a4b2d54"
+
+
+def named_workflow_step(workflow: str, name: str) -> str:
+    """Return one named workflow step block.
+
+    Raises
+    ------
+    AssertionError
+        If `workflow` does not contain exactly one step named `name`.
+    """
+    pattern = re.compile(
+        rf"(?ms)^      - name: {re.escape(name)}\n"
+        r".*?(?=^      - (?:name|uses): |^    [A-Za-z_-]+:|\Z)"
+    )
+    matches = pattern.findall(workflow)
+    assert len(matches) == 1
+    return matches[0]
 
 
 def load_text(path: Path) -> str:
@@ -93,11 +111,12 @@ def test_ci_installs_linker_tools_and_uses_coverage_carve_out() -> None:
     assert f"setup-rust@{SHARED_ACTIONS_REVISION}" in workflow
     assert f"generate-coverage@{SHARED_ACTIONS_REVISION}" in workflow
     assert "run: make test-scripts" in workflow
-    assert "if: runner.os == 'Linux'" in workflow
-    assert "export DEBIAN_FRONTEND=noninteractive" in workflow
+    linker_step = named_workflow_step(workflow, "Install mold linker")
+    assert "if: runner.os == 'Linux'" in linker_step
+    assert "export DEBIAN_FRONTEND=noninteractive" in linker_step
     assert (
         "sudo apt-get install --yes --no-install-recommends clang mold"
-        in workflow
+        in linker_step
     )
     assert "CARGO_PROFILE_DEV_CODEGEN_BACKEND" not in workflow
 
@@ -107,11 +126,12 @@ def test_release_workflow_installs_linker_tools() -> None:
     workflow = load_text(RELEASE_WORKFLOW)
 
     assert f"setup-rust@{SHARED_ACTIONS_REVISION}" in workflow
-    assert "if: runner.os == 'Linux'" in workflow
-    assert "export DEBIAN_FRONTEND=noninteractive" in workflow
+    linker_step = named_workflow_step(workflow, "Install mold linker")
+    assert "if: runner.os == 'Linux'" in linker_step
+    assert "export DEBIAN_FRONTEND=noninteractive" in linker_step
     assert (
         "sudo apt-get install --yes --no-install-recommends clang mold"
-        in workflow
+        in linker_step
     )
     assert 'RUSTFLAGS: ""' in workflow
 
