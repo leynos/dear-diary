@@ -92,5 +92,5 @@ def test_build_configuration_is_developer_documentation() -> None:
     assert "Toolchain prerequisites" not in readme
     assert "rustc-codegen-cranelift" not in readme
     assert "CI and coverage" in user_guide
-    assert "shared coverage action" in user_guide
+    assert "shared `generate-coverage` action" in user_guide
     assert "LLVM coverage instrumentation" in user_guide

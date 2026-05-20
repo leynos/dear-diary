@@ -66,9 +66,9 @@ cargo test --workspace
 
 ### CI and coverage
 
-Continuous integration measures Rust coverage through the shared
-`generate-coverage` action. Coverage runs use the LLVM backend instead of
-Cranelift because `cargo-llvm-cov` relies on LLVM coverage instrumentation.
+CI measures Rust coverage with the shared `generate-coverage` action. Coverage
+runs use the LLVM backend instead of Cranelift because `cargo-llvm-cov` relies
+on LLVM coverage instrumentation.
 
 Keep that LLVM instrumentation carve-out inside the shared coverage action. Do
 not add a workflow-level or step-level `CARGO_PROFILE_DEV_CODEGEN_BACKEND=llvm`
