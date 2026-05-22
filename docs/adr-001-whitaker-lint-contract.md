@@ -39,7 +39,7 @@ panicking or hiding fallibility.
 - CI takes on an additional setup step for the pinned Whitaker installer.
 - Refactors driven by Bumpy Road findings should favour small private helpers
   over lint suppressions.
-- Test helpers must avoid `.expect()` outside recognised test bodies; when a
+- Test helpers must avoid `.expect()` outside recognized test bodies; when a
   helper can fail, it should return `Result` or keep the failure inside the
   test body.
 - Configuration-loading tests should cover both isolated interpolation helpers

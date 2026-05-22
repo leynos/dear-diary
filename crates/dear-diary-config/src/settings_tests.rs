@@ -23,7 +23,7 @@ const SETTINGS_ENV_KEYS: &[&str] = &[
 
 /// Guard that restores settings-related environment variables on drop.
 struct EnvGuard {
-    _lock: MutexGuard<'static, ()>,
+    lock: MutexGuard<'static, ()>,
     saved: HashMap<&'static str, Option<String>>,
 }
 
@@ -38,15 +38,16 @@ impl EnvGuard {
             .iter()
             .map(|key| (*key, std::env::var(key).ok()))
             .collect();
-        let guard = Self { _lock: lock, saved };
+        let guard = Self { lock, saved };
         for key in SETTINGS_ENV_KEYS {
-            Self::remove(key);
+            guard.remove(key);
         }
         guard
     }
 
     /// Sets an environment variable while the guard serializes access.
-    fn set(key: &'static str, value: &str) {
+    fn set(&self, key: &'static str, value: &str) {
+        std::hint::black_box(&self.lock);
         // SAFETY: tests mutate process-global environment only while holding
         // ENV_MUTEX, and EnvGuard restores the previous values.
         unsafe {
@@ -55,7 +56,8 @@ impl EnvGuard {
     }
 
     /// Removes an environment variable while the guard serializes access.
-    fn remove(key: &'static str) {
+    fn remove(&self, key: &'static str) {
+        std::hint::black_box(&self.lock);
         // SAFETY: tests mutate process-global environment only while holding
         // ENV_MUTEX, and EnvGuard restores the previous values.
         unsafe {
@@ -64,10 +66,10 @@ impl EnvGuard {
     }
 
     /// Restores one environment variable to its captured value.
-    fn restore(key: &'static str, saved_value: Option<&str>) {
+    fn restore(&self, key: &'static str, saved_value: Option<&str>) {
         match saved_value {
-            Some(original) => Self::set(key, original),
-            None => Self::remove(key),
+            Some(original) => self.set(key, original),
+            None => self.remove(key),
         }
     }
 }
@@ -75,7 +77,7 @@ impl EnvGuard {
 impl Drop for EnvGuard {
     fn drop(&mut self) {
         for (key, saved_value) in &self.saved {
-            Self::restore(key, saved_value.as_deref());
+            self.restore(key, saved_value.as_deref());
         }
     }
 }
@@ -116,18 +118,15 @@ fn test_qdrant_settings_validate_neither_set() {
 }
 
 #[rstest]
-fn test_qdrant_settings_validate_url_only() {
+#[case(Some("http://localhost:6334".to_owned()), None)]
+#[case(None, Some("/tmp/qdrant".to_owned()))]
+fn test_qdrant_settings_validate_single_connection_mode(
+    #[case] qdrant_url: Option<String>,
+    #[case] qdrant_local_path: Option<String>,
+) {
     let settings = QdrantSettings {
-        qdrant_url: Some("http://localhost:6334".to_owned()),
-        ..Default::default()
-    };
-    assert!(settings.validate().is_ok());
-}
-
-#[rstest]
-fn test_qdrant_settings_validate_local_path_only() {
-    let settings = QdrantSettings {
-        qdrant_local_path: Some("/tmp/qdrant".to_owned()),
+        qdrant_url,
+        qdrant_local_path,
         ..Default::default()
     };
     assert!(settings.validate().is_ok());
@@ -168,9 +167,9 @@ fn test_filterable_fields_map() {
 
 #[rstest]
 fn test_from_env_with_git_resolves_collection_name_placeholders() {
-    let _env = EnvGuard::new();
-    EnvGuard::set("QDRANT_URL", "http://localhost:6334");
-    EnvGuard::set("COLLECTION_NAME", "{owner}-{repo}-{cwd}-{branch}");
+    let env = EnvGuard::new();
+    env.set("QDRANT_URL", "http://localhost:6334");
+    env.set("COLLECTION_NAME", "{owner}-{repo}-{cwd}-{branch}");
 
     let mut git = MockGitContext::new();
     git.expect_remote_url()
@@ -195,9 +194,9 @@ fn test_from_env_with_git_resolves_collection_name_placeholders() {
 
 #[rstest]
 fn test_from_env_with_git_reports_unresolved_collection_name_placeholders() {
-    let _env = EnvGuard::new();
-    EnvGuard::set("QDRANT_URL", "http://localhost:6334");
-    EnvGuard::set("COLLECTION_NAME", "{owner}-{repo}");
+    let env = EnvGuard::new();
+    env.set("QDRANT_URL", "http://localhost:6334");
+    env.set("COLLECTION_NAME", "{owner}-{repo}");
 
     let mut git = MockGitContext::new();
     git.expect_remote_url().returning(|| Ok(None));

@@ -51,7 +51,7 @@ whitaker-installer --cranelift
 Whitaker is a Dylint-based lint suite used to catch architectural and code
 health regressions that Clippy does not cover. In this workspace it enforces
 rules such as module-level documentation, no panicking `expect` calls outside
-recognised test bodies, and Bumpy Road complexity checks. Those checks make the
+recognized test bodies, and Bumpy Road complexity checks. Those checks make the
 lint target a maintainability gate, not only a syntax or style gate.
 
 The complexity checks are intentionally active for configuration code. When
