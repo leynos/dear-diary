@@ -41,20 +41,21 @@ jobs:
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
         with:
           path: |
-            ~/.cargo/bin/whitaker
             ~/.cargo/bin/whitaker-installer
+            ~/.local/bin/whitaker
             ~/.dylint_drivers
             ~/.local/share/whitaker
-          key: whitaker-${{ runner.os }}-${{ env.WHITAKER_INSTALLER_REV }}
+          key: whitaker-v2-${{ runner.os }}-${{ env.WHITAKER_INSTALLER_REV }}
       - name: Script tests
         run: make test-scripts
       - name: Install Whitaker
-        if: steps.cache-whitaker.outputs.cache-hit != 'true'
         run: |
-          cargo install --locked \
-            --git https://github.com/leynos/whitaker \
-            --rev "${WHITAKER_INSTALLER_REV}" \
-            whitaker-installer
+          if ! command -v whitaker-installer >/dev/null 2>&1; then
+            cargo install --locked \
+              --git https://github.com/leynos/whitaker \
+              --rev "${WHITAKER_INSTALLER_REV}" \
+              whitaker-installer
+          fi
           whitaker-installer --cranelift
       - name: Lint
         run: make lint
