@@ -36,8 +36,8 @@ challenges.
 Cyclomatic Complexity, developed by Thomas J. McCabe, Sr. in 1976, is a
 quantitative measure of the number of linearly independent paths through a
 program's source code.[^3] It essentially quantifies the structural complexity
-of a program by counting decision points that can affect the execution flow.[
-^4] This metric is computed using the control-flow graph of the program, where
+of a program by counting decision points that can affect the execution
+flow.[^4] This metric is computed using the control-flow graph of the program, where
 nodes represent indivisible groups of commands, and directed edges connect
 nodes if one command can immediately follow another.[^3]
 
@@ -219,8 +219,8 @@ The impact of this antipattern is significant:
   manipulated across these logical chunks.[^2]
 
 - **Higher Defect Rates:** The heavy tax on working memory and the risk of
-  feature entanglement contribute to a higher likelihood of introducing bugs.[
-  ^9]
+  feature entanglement contribute to a higher likelihood of introducing
+  bugs.[^9]
 
 - **Impeded Evolvability:** Adding new features or adapting to changing
   requirements becomes a daunting task, as the existing complex structure
@@ -429,8 +429,8 @@ state (queries).[^14] Commands are task-based and should represent specific
 business intentions (e.g.,
 
 `BookHotelRoomCommand` rather than `SetReservationStatusCommand`).[^14] Queries
-never alter data and return Data Transfer Objects optimized for display needs.[
-^14]
+never alter data and return Data Transfer Objects optimized for display
+needs.[^14]
 
 While Command Query Responsibility Segregation operates at a higher
 architectural level than a single Bumpy Road method, the principles are
@@ -644,9 +644,9 @@ programming.[^25] This paradigm shift can significantly reduce cognitive
 complexity by abstracting away low-level control flow and state management.
 
 When developers write declarative code, they operate at a higher level of
-abstraction, allowing them to reason about the program's intent more directly.[
-^25] This often leads to more concise, readable, and maintainable code because
-the "noise" of explicit iteration, temporary variables, and manual state
+abstraction, allowing them to reason about the program's intent more directly.[^25]
+This often leads to more concise, readable, and maintainable code because the
+"noise" of explicit iteration, temporary variables, and manual state
 updates is minimized.[^25] Many declarative approaches also inherently favour
 immutability, reduce side effects, and encourage deterministic behaviour—common
 culprits for bugs and increased cognitive load in imperative code.[^26]
@@ -656,8 +656,8 @@ specifying the desired dataset rather than the retrieval algorithm[^34]—or
 employing functional programming constructs like `map`, `filter`, and `reduce`
 on collections instead of writing explicit loops. Refactoring imperative code
 to a declarative style can start small, perhaps by converting a loop that
-filters and transforms a list into a chain of `filter` and `map` operations.[
-^26] The broader adoption of declarative approaches in areas like UI
+filters and transforms a list into a chain of `filter` and `map`
+operations.[^26] The broader adoption of declarative approaches in areas like UI
 development (e.g., React) and data querying signifies an industry trend towards
 managing complexity by raising abstraction levels. However, the effectiveness
 of declarative programming relies on well-designed underlying abstractions; a
@@ -678,8 +678,8 @@ the object that knows how to perform it. Instead of a large conditional
 checking a type and then executing logic, different command objects can be
 instantiated based on the type, and then their `execute()` method is called.
 This promotes the Single Responsibility Principle, as each command class
-handles a single action, making the system easier to test, extend, and evolve.[
-^29]
+handles a single action, making the system easier to test, extend, and
+evolve.[^29]
 
 The **Dispatcher pattern** often works in conjunction with the Command pattern.
 A dispatcher is a central component that receives requests (which could be

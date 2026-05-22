@@ -48,6 +48,23 @@ cargo install --locked \
 whitaker-installer --cranelift
 ```
 
+Whitaker is a Dylint-based lint suite used to catch architectural and code
+health regressions that Clippy does not cover. In this workspace it enforces
+rules such as module-level documentation, no panicking `expect` calls outside
+recognised test bodies, and Bumpy Road complexity checks. Those checks make the
+lint target a maintainability gate, not only a syntax or style gate.
+
+The complexity checks are intentionally active for configuration code. When
+Whitaker identifies clustered branching, prefer extracting named helpers that
+preserve explicit fallibility and dependency injection boundaries. For example,
+collection-name interpolation keeps git access behind `GitContext`, while the
+remote URL parser owns URL-shape decisions. This keeps configuration loading
+testable without allowing startup parsing logic to grow into a single
+multi-purpose function.
+
+The architectural decision is recorded in
+[`docs/adr-001-whitaker-lint-contract.md`](adr-001-whitaker-lint-contract.md).
+
 Linux `x86_64-unknown-linux-gnu` builds link through `clang` with `mold`:
 
 ```toml
