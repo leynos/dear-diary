@@ -22,66 +22,66 @@ use crate::error::ConfigError;
 use parse::parse_remote_url;
 
 /// Tracks which interpolation placeholders appear in a template.
-struct PlaceholderNeeds(u8);
+struct PlaceholderNeeds {
+    remote: RemotePlaceholderNeeds,
+    local: LocalPlaceholderNeeds,
+}
+
+/// Tracks placeholders resolved from git remote metadata.
+struct RemotePlaceholderNeeds {
+    repo: bool,
+    owner: bool,
+}
+
+/// Tracks placeholders resolved from local repository state.
+struct LocalPlaceholderNeeds {
+    cwd: bool,
+    branch: bool,
+}
 
 impl PlaceholderNeeds {
-    const REPO: u8 = 1 << 0;
-    const OWNER: u8 = 1 << 1;
-    const CWD: u8 = 1 << 2;
-    const BRANCH: u8 = 1 << 3;
-
     /// Builds placeholder requirements by scanning the template once per token.
     fn from_template(template: &str) -> Self {
-        let mut flags = 0;
-        flags |= placeholder_flag(template, "{repo}", Self::REPO);
-        flags |= placeholder_flag(template, "{owner}", Self::OWNER);
-        flags |= placeholder_flag(template, "{cwd}", Self::CWD);
-        flags |= placeholder_flag(template, "{branch}", Self::BRANCH);
-        Self(flags)
+        Self {
+            remote: RemotePlaceholderNeeds {
+                repo: template.contains("{repo}"),
+                owner: template.contains("{owner}"),
+            },
+            local: LocalPlaceholderNeeds {
+                cwd: template.contains("{cwd}"),
+                branch: template.contains("{branch}"),
+            },
+        }
     }
 
     /// Returns true when the template contains no supported placeholders.
     const fn is_empty(&self) -> bool {
-        self.0 == 0
+        !self.needs_remote() && !self.needs_cwd() && !self.needs_branch()
     }
 
     /// Returns true when interpolation must inspect the git remote.
     const fn needs_remote(&self) -> bool {
-        self.has(Self::REPO | Self::OWNER)
+        self.remote.repo || self.remote.owner
     }
 
     /// Returns true when the repository placeholder appears in the template.
     const fn needs_repo(&self) -> bool {
-        self.has(Self::REPO)
+        self.remote.repo
     }
 
     /// Returns true when the owner placeholder appears in the template.
     const fn needs_owner(&self) -> bool {
-        self.has(Self::OWNER)
+        self.remote.owner
     }
 
     /// Returns true when the working-directory placeholder appears.
     const fn needs_cwd(&self) -> bool {
-        self.has(Self::CWD)
+        self.local.cwd
     }
 
     /// Returns true when the branch placeholder appears in the template.
     const fn needs_branch(&self) -> bool {
-        self.has(Self::BRANCH)
-    }
-
-    /// Returns true when any selected placeholder flag is set.
-    const fn has(&self, flag: u8) -> bool {
-        self.0 & flag != 0
-    }
-}
-
-/// Returns the flag when the template contains a placeholder.
-fn placeholder_flag(template: &str, placeholder: &str, flag: u8) -> u8 {
-    if template.contains(placeholder) {
-        flag
-    } else {
-        0
+        self.local.branch
     }
 }
 

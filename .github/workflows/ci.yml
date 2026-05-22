@@ -36,9 +36,20 @@ jobs:
             !**/dist/**
       - name: Setup uv
         uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78
+      - name: Cache Whitaker installation
+        id: cache-whitaker
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/whitaker
+            ~/.cargo/bin/whitaker-installer
+            ~/.dylint_drivers
+            ~/.local/share/whitaker
+          key: whitaker-${{ runner.os }}-${{ env.WHITAKER_INSTALLER_REV }}
       - name: Script tests
         run: make test-scripts
       - name: Install Whitaker
+        if: steps.cache-whitaker.outputs.cache-hit != 'true'
         run: |
           cargo install --locked \
             --git https://github.com/leynos/whitaker \
