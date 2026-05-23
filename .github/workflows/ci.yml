@@ -50,7 +50,7 @@ jobs:
         run: make test-scripts
       - name: Install Whitaker
         run: |
-          if ! command -v whitaker-installer >/dev/null 2>&1; then
+          if [ "${{ steps.cache-whitaker.outputs.cache-hit }}" != "true" ]; then
             cargo install --locked \
               --git https://github.com/leynos/whitaker \
               --rev "${WHITAKER_INSTALLER_REV}" \
