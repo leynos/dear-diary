@@ -42,7 +42,7 @@ qdrant-client = { version = "1.17", features = ["serde"] }
 schemars = "1.2"
 
 # Embeddings
-fastembed = "4.8"
+fastembed = "5.13"
 
 # Error handling
 thiserror = "2.0"
