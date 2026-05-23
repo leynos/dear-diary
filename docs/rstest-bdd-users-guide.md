@@ -590,11 +590,11 @@ one may filter or run them in parallel as usual.
 
 Steps or hooks may call `rstest_bdd::skip!` to stop executing the remaining
 steps. The macro records a `Skipped` outcome and short-circuits the scenario so
-the generated test returns before evaluating the annotated function body.
-Invoke `skip!()` with no arguments to record a skipped outcome without a
-message. Pass an optional string to describe the reason, and use the standard
-`format!` syntax to interpolate values when needed. Set the
-`RSTEST_BDD_FAIL_ON_SKIPPED` environment variable to `1`, or call
+the generated test returns before evaluating the annotated function body. Invoke
+ `skip!()` with no arguments to record a skipped outcome without a message.
+Pass an optional string to describe the reason, and use the standard `format!`
+syntax to interpolate values when needed. Set the `RSTEST_BDD_FAIL_ON_SKIPPED`
+environment variable to `1`, or call
 `rstest_bdd::config::set_fail_on_skipped(true)`, to escalate skipped scenarios
 into test failures unless the feature or scenario carries an `@allow_skipped`
 tag. (Example-level tags are not yet evaluated.)
@@ -650,9 +650,9 @@ that a step or scenario stopped executing. Use
 `rstest_bdd::assert_step_skipped!` to unwrap a `StepExecution::Skipped`
 outcome, optionally constraining its message, and
 `rstest_bdd::assert_scenario_skipped!` to inspect
-[`ScenarioStatus`](crate::reporting::ScenarioStatus) records. Both macros
-accept `message_absent = true` to assert that no message was provided and
-substring matching to confirm that a message contains the expected reason.
+[`ScenarioStatus`](crate::reporting::ScenarioStatus) records. Both macros accept
+ `message_absent = true` to assert that no message was provided, and substring
+matching to confirm that a message contains the expected reason.
 
 ```rust,no_run
 use rstest_bdd::{assert_scenario_skipped, assert_step_skipped, StepExecution};
@@ -778,11 +778,11 @@ Best practices for writing effective scenarios include:
   referring to `{u32}`), escape them as `{{` and `}}` rather than placing them
   inside `{name:type}`. The lexer closes the placeholder at the first `}` after
   the optional type hint; any characters between the `:type` and that first `}`
-  are ignored (for example, `{n:u32 extra}` parses as `name = n`,
-  `type = u32`). `name` must start with a letter or underscore and may contain
-  letters, digits, or underscores (`[A-Za-z_][A-Za-z0-9_]*`). Whitespace within
-  the type hint is ignored (for example, `{count: u32}` and `{count:u32}` are
-  both accepted), but whitespace is not allowed between the name and the colon.
+  are ignored (for example, `{n:u32 extra}` parses as `name = n`, `type = u32`).
+   `name` must start with a letter or underscore and may contain letters,
+  digits, or underscores (`[A-Za-z_][A-Za-z0-9_]*`). Whitespace within the type
+  hint is ignored (for example, `{count: u32}` and `{count:u32}` are both
+  accepted), but whitespace is not allowed between the name and the colon.
   Prefer the compact form `{count:u32}` in new code. When a pattern contains no
   placeholders, the step text must match exactly. Unknown type hints are
   treated as generic placeholders and capture any non-newline text using a
@@ -1224,9 +1224,8 @@ rstest_bdd::reporting::json::write_snapshot(&mut buffer)?;
 ```
 
 The companion `rstest_bdd::reporting::junit` module renders the same snapshot
-as JUnit XML. Each skipped scenario emits a `<skipped>` element with an
-optional `message` attribute so continuous integration (CI) servers surface the
-reason:
+as JUnit XML. Each skipped scenario emits a `<skipped>` element with an optional
+ `message` attribute, so continuous integration (CI) servers surface the reason:
 
 ```rust,no_run
 let mut xml = String::new();

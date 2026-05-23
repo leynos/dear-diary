@@ -4,7 +4,7 @@
 //! allowing us to test deprecation filtering and other server behaviour
 //! without needing a real Qdrant instance.
 
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, SystemTimeError, UNIX_EPOCH};
 
 use rmcp::handler::server::wrapper::Parameters;
 use rmcp::model::Content;
@@ -22,12 +22,16 @@ use rmcp::model::ErrorCode;
 const ONE_DAY_SECS: i64 = 24 * 3600;
 
 /// Helper to get current Unix timestamp for tests.
-fn current_timestamp() -> i64 {
-    #[expect(clippy::cast_possible_wrap, reason = "Unix timestamp fits in i64")]
+fn current_timestamp() -> Result<i64, SystemTimeError> {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_secs() as i64)
-        .expect("System time should be after Unix epoch")
+        .map(duration_secs_i64)
+}
+
+/// Converts a Unix timestamp duration into signed seconds for test fixtures.
+#[expect(clippy::cast_possible_wrap, reason = "Unix timestamp fits in i64")]
+fn duration_secs_i64(duration: Duration) -> i64 {
+    duration.as_secs() as i64
 }
 
 /// Helper to extract text from Content, panics if not text content.
@@ -42,9 +46,11 @@ fn content_text(content: &Content) -> &str {
 /// Test that entries deprecated > 7 days ago are hidden in `qdrant_find` results.
 #[rstest]
 #[tokio::test]
-async fn test_old_deprecated_entries_hidden_in_find(settings: Settings) {
+async fn test_old_deprecated_entries_hidden_in_find(
+    settings: Settings,
+) -> Result<(), SystemTimeError> {
     let mut connector = MockQdrantConnector::new();
-    let now = current_timestamp();
+    let now = current_timestamp()?;
 
     // Mock collection_exists to return true
     connector.expect_collection_exists().returning(|_| Ok(true));
@@ -79,14 +85,17 @@ async fn test_old_deprecated_entries_hidden_in_find(settings: Settings) {
         text.contains("No results found"),
         "Old deprecated entry should be filtered out"
     );
+    Ok(())
 }
 
 /// Test that entries deprecated > 7 days ago are shown when `include_deprecated` is true.
 #[rstest]
 #[tokio::test]
-async fn test_old_deprecated_entries_visible_with_flag(settings: Settings) {
+async fn test_old_deprecated_entries_visible_with_flag(
+    settings: Settings,
+) -> Result<(), SystemTimeError> {
     let mut connector = MockQdrantConnector::new();
-    let now = current_timestamp();
+    let now = current_timestamp()?;
 
     connector.expect_collection_exists().returning(|_| Ok(true));
 
@@ -123,14 +132,17 @@ async fn test_old_deprecated_entries_visible_with_flag(settings: Settings) {
         text.contains("Old deprecated memory"),
         "Entry content should be present"
     );
+    Ok(())
 }
 
 /// Test that recently deprecated entries (< 7 days) are visible with [DEPRECATED] prefix.
 #[rstest]
 #[tokio::test]
-async fn test_recent_deprecated_entries_visible_with_prefix(settings: Settings) {
+async fn test_recent_deprecated_entries_visible_with_prefix(
+    settings: Settings,
+) -> Result<(), SystemTimeError> {
     let mut connector = MockQdrantConnector::new();
-    let now = current_timestamp();
+    let now = current_timestamp()?;
 
     connector.expect_collection_exists().returning(|_| Ok(true));
 
@@ -167,6 +179,7 @@ async fn test_recent_deprecated_entries_visible_with_prefix(settings: Settings) 
         text.contains("Recent deprecated memory"),
         "Entry content should be present"
     );
+    Ok(())
 }
 
 /// Test that `qdrant_store` rejects requests when server is in read-only mode.

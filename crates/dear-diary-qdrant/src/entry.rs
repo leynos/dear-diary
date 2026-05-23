@@ -99,6 +99,8 @@ impl SearchQuery {
 
 #[cfg(test)]
 mod tests {
+    //! Unit tests for entry and search-query data helpers.
+
     use super::*;
     use serde_json::json;
 

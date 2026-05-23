@@ -13,6 +13,7 @@ jobs:
     env:
       CARGO_TERM_COLOR: always
       BUILD_PROFILE: debug
+      WHITAKER_INSTALLER_REV: f768c2e53c47df13658af1168a67851d388750bf
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
       - name: Setup Rust
@@ -35,8 +36,27 @@ jobs:
             !**/dist/**
       - name: Setup uv
         uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78
+      - name: Cache Whitaker installation
+        id: cache-whitaker
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: |
+            ~/.cargo/bin/whitaker-installer
+            ~/.local/bin/whitaker
+            ~/.dylint_drivers
+            ~/.local/share/whitaker
+          key: whitaker-v2-${{ runner.os }}-${{ env.WHITAKER_INSTALLER_REV }}
       - name: Script tests
         run: make test-scripts
+      - name: Install Whitaker
+        run: |
+          if [ "${{ steps.cache-whitaker.outputs.cache-hit }}" != "true" ]; then
+            cargo install --locked \
+              --git https://github.com/leynos/whitaker \
+              --rev "${WHITAKER_INSTALLER_REV}" \
+              whitaker-installer
+          fi
+          whitaker-installer --cranelift
       - name: Lint
         run: make lint
       - name: Test and Measure Coverage

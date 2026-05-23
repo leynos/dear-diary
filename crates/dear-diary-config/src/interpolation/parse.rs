@@ -53,66 +53,103 @@ pub(crate) fn parse_remote_url(raw_url: &str) -> Result<RemoteInfo, ConfigError>
     let clean_path = without_prefix
         .strip_suffix(".git")
         .unwrap_or(without_prefix);
+    let segments = RemotePathSegments::from_path(clean_path);
 
-    // Walk segments once, tracking first and last non-empty values.
-    let mut first_segment: Option<&str> = None;
-    let mut last_segment: Option<&str> = None;
-    let mut segment_count: usize = 0;
+    remote_info_from_segments(raw_url, &segments)
+}
 
-    for segment in clean_path.split('/').filter(|s| !s.is_empty()) {
-        if first_segment.is_none() {
-            first_segment = Some(segment);
+/// First, last, and count metadata for a remote path.
+struct RemotePathSegments<'a> {
+    first: Option<&'a str>,
+    last: Option<&'a str>,
+    count: usize,
+}
+
+impl<'a> RemotePathSegments<'a> {
+    /// Builds segment metadata without allocating a segment vector.
+    fn from_path(clean_path: &'a str) -> Self {
+        let mut first = None;
+        let mut last = None;
+        let mut count = 0;
+
+        for segment in clean_path.split('/').filter(|s| !s.is_empty()) {
+            first.get_or_insert(segment);
+            last = Some(segment);
+            count += 1;
         }
-        last_segment = Some(segment);
-        segment_count += 1;
+
+        Self { first, last, count }
     }
 
-    match segment_count {
-        0 => Err(ConfigError::InterpolationContextError(format!(
-            concat!(
-                "Cannot extract repository from remote URL ",
-                "'{0}': path contains no segments"
-            ),
-            raw_url
-        ))),
-        1 => {
-            // Single segment — repo only, no owner.
-            // SAFETY (logic): segment_count == 1 guarantees
-            // last_segment is Some (set during the loop above).
-            let repo = last_segment.ok_or_else(|| {
-                ConfigError::InterpolationContextError(format!(
-                    "Cannot extract repository from remote URL \
-                     '{raw_url}'"
-                ))
-            })?;
-            Ok(RemoteInfo {
-                owner: None,
-                repo: repo.to_owned(),
-            })
-        }
-        _ => {
-            // Two or more segments — first is owner, last is repo.
-            // SAFETY (logic): segment_count >= 2 guarantees both Some.
-            let owner_raw = first_segment.ok_or_else(|| {
-                ConfigError::InterpolationContextError(format!(
-                    "Cannot extract owner/repo from remote URL \
-                     '{raw_url}'"
-                ))
-            })?;
-            let repo = last_segment.ok_or_else(|| {
-                ConfigError::InterpolationContextError(format!(
-                    "Cannot extract owner/repo from remote URL \
-                     '{raw_url}'"
-                ))
-            })?;
-
-            // Strip Source Hut tilde prefix from owner.
-            let owner = owner_raw.strip_prefix('~').unwrap_or(owner_raw);
-
-            Ok(RemoteInfo {
-                owner: Some(owner.to_owned()),
-                repo: repo.to_owned(),
-            })
-        }
+    /// Returns true when the path contains no repository segment.
+    const fn is_empty(&self) -> bool {
+        self.count == 0
     }
+
+    /// Returns true when the path contains a repository without an owner.
+    const fn is_single_segment(&self) -> bool {
+        self.count == 1
+    }
+}
+
+/// Builds remote metadata from parsed path segments.
+fn remote_info_from_segments(
+    raw_url: &str,
+    segments: &RemotePathSegments<'_>,
+) -> Result<RemoteInfo, ConfigError> {
+    if segments.is_empty() {
+        return Err(empty_remote_path_error(raw_url));
+    }
+
+    if segments.is_single_segment() {
+        return Ok(RemoteInfo {
+            owner: None,
+            repo: last_remote_segment(raw_url, segments)?.to_owned(),
+        });
+    }
+
+    let owner_raw = first_remote_segment(raw_url, segments)?;
+    let owner = owner_raw.strip_prefix('~').unwrap_or(owner_raw);
+
+    Ok(RemoteInfo {
+        owner: Some(owner.to_owned()),
+        repo: last_remote_segment(raw_url, segments)?.to_owned(),
+    })
+}
+
+/// Builds the domain error for remote URLs without path segments.
+fn empty_remote_path_error(raw_url: &str) -> ConfigError {
+    ConfigError::InterpolationContextError(format!(
+        concat!(
+            "Cannot extract repository from remote URL ",
+            "'{0}': path contains no segments"
+        ),
+        raw_url
+    ))
+}
+
+/// Returns the first remote path segment.
+fn first_remote_segment<'a>(
+    raw_url: &str,
+    segments: &RemotePathSegments<'a>,
+) -> Result<&'a str, ConfigError> {
+    segments.first.ok_or_else(|| {
+        ConfigError::InterpolationContextError(format!(
+            "Cannot extract owner/repo from remote URL \
+             '{raw_url}'"
+        ))
+    })
+}
+
+/// Returns the last remote path segment.
+fn last_remote_segment<'a>(
+    raw_url: &str,
+    segments: &RemotePathSegments<'a>,
+) -> Result<&'a str, ConfigError> {
+    segments.last.ok_or_else(|| {
+        ConfigError::InterpolationContextError(format!(
+            "Cannot extract repository from remote URL \
+             '{raw_url}'"
+        ))
+    })
 }

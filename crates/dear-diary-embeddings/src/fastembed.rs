@@ -134,6 +134,8 @@ impl EmbeddingProvider for FastEmbedProvider {
 
 #[cfg(test)]
 mod tests {
+    //! Unit tests for `FastEmbed` model parsing and metadata helpers.
+
     use super::*;
 
     #[test]

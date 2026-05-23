@@ -20,9 +20,9 @@ Each binary is named using the pattern `dear-diary-<os>-<arch>`.
 
 For Linux `x86_64-unknown-linux-gnu` and `aarch64-unknown-linux-gnu`, the
 workflow also produces `cargo-binstall` archives named
-`dear-diary-<version>-<target>.tar.gz`. Each archive contains the
-`dear-diary` binary at the archive root, matching the
-`crates/dear-diary/Cargo.toml` `[package.metadata.binstall]` configuration.
+`dear-diary-<version>-<target>.tar.gz`. Each archive contains the `dear-diary`
+binary at the archive root, matching the `crates/dear-diary/Cargo.toml`
+`[package.metadata.binstall]` configuration.
 
 Binaries are uploaded as soon as they are built, so they are available from the
 workflow run while other targets build.
