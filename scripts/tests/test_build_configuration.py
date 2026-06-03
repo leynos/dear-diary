@@ -22,7 +22,7 @@ README = PROJECT_ROOT / "README.md"
 RELEASE_WORKFLOW = PROJECT_ROOT / ".github" / "workflows" / "release.yml"
 RUST_TOOLCHAIN = PROJECT_ROOT / "rust-toolchain.toml"
 USER_GUIDE = PROJECT_ROOT / "docs" / "users-guide.md"
-SHARED_ACTIONS_REVISION = "d400b079fb6a8fa92f7e7b6c57f3d1c92a4b2d54"
+SHARED_ACTIONS_REVISION = "eff100c965da05e14fd4e07d7ea518408b312cb8"
 HARDENED_LINKER_INSTALL_COMMAND = (
     "apt-get update && sudo apt-get install --yes --no-install-recommends "
     "clang mold"
@@ -175,12 +175,18 @@ def test_release_workflow_installs_linker_tools() -> None:
     workflow = load_text(RELEASE_WORKFLOW)
 
     assert f"setup-rust@{SHARED_ACTIONS_REVISION}" in workflow
+    assert f"stage-release-artefacts@{SHARED_ACTIONS_REVISION}" in workflow
+    assert "cargo_binstall_archive" not in workflow
     linker_step = named_workflow_step(workflow, "Install mold linker")
+    staging_step = named_workflow_step(workflow, "Stage release artefacts")
     assert "if: runner.os == 'Linux'" in linker_step
     assert "export DEBIAN_FRONTEND=noninteractive" in linker_step
     assert HARDENED_LINKER_INSTALL_COMMAND in normalise_shell_continuations(
         linker_step
     )
+    assert "config-file: .github/release-staging.toml" in staging_step
+    assert "target: ${{ matrix.key }}" in staging_step
+    assert "path: ${{ steps.stage.outputs.artifact-dir }}" in workflow
     assert 'RUSTFLAGS: ""' in workflow
 
 

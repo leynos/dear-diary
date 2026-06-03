@@ -177,8 +177,12 @@ Risks differ from Surprises: risks are anticipated; surprises are not.
       reported the single member `dear-diary`; `sha256sum -c` passed for both
       sidecars. Full log:
       `/tmp/stage-proof-dear-diary-chore_plan-shared-actions-binstall-update.out`.
-- [ ] Milestone C: switch `.github/workflows/release.yml` to the shared
+- [x] Milestone C: switch `.github/workflows/release.yml` to the shared
       action; unify shared-action SHA across `release.yml` and `ci.yml`.
+      Completed (2026-06-03 13:16Z). Evidence: `make check-fmt`,
+      `make test-scripts`, `make lint`, `make test`, and `make markdownlint`
+      passed. `act push -e tests/fixtures/release.event.json --list` parsed
+      the workflow and reported the `build` and `release` jobs.
 - [ ] Milestone D: retire `prepare-artifact` and `release_packaging.py`,
       including their tests and snapshots.
 - [ ] Milestone E: add `act`-driven black-box pytest harness under `tests/`,
@@ -238,6 +242,15 @@ completed or partially completed.
   advertises Linux GNU archives through a Linux-specific override. Publishing
   a FreeBSD tarball without matching package metadata would create an
   unadvertised artefact rather than preserving the current release contract.
+  Date/Author: 2026-06-03, Codex.
+- Decision: accept the `setup-rust` SHA bump after inspecting the action diff
+  between `d400b079fb6a8fa92f7e7b6c57f3d1c92a4b2d54` and
+  `eff100c965da05e14fd4e07d7ea518408b312cb8`.
+  Rationale: there is no `.github/actions/setup-rust/TOOLCHAIN_VERSION` file
+  at either SHA. The action diff is limited to cargo-binstall installer
+  hardening: `BINSTALL_VERSION` is exported so the child installer receives the
+  pinned tag, and the installed version is checked after installation. No Rust
+  toolchain selection changed.
   Date/Author: 2026-06-03, Codex.
 
 ## Outcomes & retrospective
