@@ -1,0 +1,35 @@
+[common]
+bin_name = "dear-diary"
+dist_dir = "artifacts"
+checksum_algorithm = "sha256"
+staging_dir_template = "{platform}-{arch}"
+
+[[common.artefacts]]
+source = "target/{target}/release/{bin_name}{bin_ext}"
+destination = "{bin_name}-{platform}-{arch}{bin_ext}"
+output = "binary_path"
+
+[common.binstall]
+enabled = true
+manifest_path = "crates/dear-diary/Cargo.toml"
+
+[targets.linux-x86_64]
+platform = "linux"
+arch = "x86_64"
+target = "x86_64-unknown-linux-gnu"
+
+[targets.linux-aarch64]
+platform = "linux"
+arch = "aarch64"
+target = "aarch64-unknown-linux-gnu"
+
+[targets.freebsd-x86_64]
+platform = "freebsd"
+arch = "x86_64"
+target = "x86_64-unknown-freebsd"
+
+# The published cargo-binstall metadata only advertises Linux GNU archives.
+# Keep FreeBSD as a plain binary release asset until the package manifest grows
+# a matching FreeBSD override.
+[targets.freebsd-x86_64.binstall]
+enabled = false

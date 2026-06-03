@@ -5,7 +5,7 @@ This ExecPlan (execution plan) is a living document. The sections
 `Decision Log`, and `Outcomes & Retrospective` must be kept up to date as work
 proceeds.
 
-Status: DRAFT
+Status: IN PROGRESS
 
 ## Purpose / big picture
 
@@ -164,9 +164,19 @@ Risks differ from Surprises: risks are anticipated; surprises are not.
 
 ## Progress
 
-- [ ] Milestone A: orient and align (no code changes).
-- [ ] Milestone B: add `.github/release-staging.toml` and prove it locally
+- [x] Milestone A: orient and align (no code changes). Completed
+      (2026-06-03 11:31Z).
+- [x] Milestone B: add `.github/release-staging.toml` and prove it locally
       against a fixture binary.
+      Completed (2026-06-03 11:38Z). Evidence: direct invocation of the
+      pinned shared action's `stage.py` against scratch workspace
+      `/tmp/dd-stage-4vVPIA` created `dear-diary-linux-x86_64`,
+      `dear-diary-linux-x86_64.sha256`,
+      `dear-diary-0.1.0-x86_64-unknown-linux-gnu.tar.gz`, and
+      `dear-diary-0.1.0-x86_64-unknown-linux-gnu.tar.gz.sha256`; `tar -tzf`
+      reported the single member `dear-diary`; `sha256sum -c` passed for both
+      sidecars. Full log:
+      `/tmp/stage-proof-dear-diary-chore_plan-shared-actions-binstall-update.out`.
 - [ ] Milestone C: switch `.github/workflows/release.yml` to the shared
       action; unify shared-action SHA across `release.yml` and `ci.yml`.
 - [ ] Milestone D: retire `prepare-artifact` and `release_packaging.py`,
@@ -183,7 +193,11 @@ completed or partially completed.
 
 ## Surprises & discoveries
 
-- (none yet)
+- `git ls-remote https://github.com/leynos/shared-actions.git` did not list
+  `eff100c965da05e14fd4e07d7ea518408b312cb8` because the commit is not a
+  remote ref tip. A shallow clone plus `git checkout` confirmed the commit is
+  fetchable and is titled `Add cargo-binstall archive staging support (#270)`.
+  Date/Author: 2026-06-03, Codex.
 
 ## Decision log
 
@@ -210,6 +224,21 @@ completed or partially completed.
   new `stage-release-artefacts` use in `release.yml`).
   Rationale: a single SHA is easier to reason about and to dependabot.
   Date/Author: 2026-06-02, Codex.
+- Decision: keep the plan's target keys and TOML field names unchanged after
+  reading the pinned shared action.
+  Rationale: the action accepts `config-file` and `target`, exposes
+  `artifact-dir`, `binary-path`, and `binstall-archive-path`, supports
+  `staging_dir_template = "{platform}-{arch}"`, and merges a
+  target-specific `[targets.<name>.binstall]` table over `[common.binstall]`.
+  No schema ambiguity was found in milestone A.
+  Date/Author: 2026-06-03, Codex.
+- Decision: explicitly disable cargo-binstall archive creation for
+  `targets.freebsd-x86_64`.
+  Rationale: today's `crates/dear-diary/Cargo.toml` binstall metadata only
+  advertises Linux GNU archives through a Linux-specific override. Publishing
+  a FreeBSD tarball without matching package metadata would create an
+  unadvertised artefact rather than preserving the current release contract.
+  Date/Author: 2026-06-03, Codex.
 
 ## Outcomes & retrospective
 
