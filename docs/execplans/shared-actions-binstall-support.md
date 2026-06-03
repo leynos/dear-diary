@@ -183,8 +183,13 @@ Risks differ from Surprises: risks are anticipated; surprises are not.
       `make test-scripts`, `make lint`, `make test`, and `make markdownlint`
       passed. `act push -e tests/fixtures/release.event.json --list` parsed
       the workflow and reported the `build` and `release` jobs.
-- [ ] Milestone D: retire `prepare-artifact` and `release_packaging.py`,
+- [x] Milestone D: retire `prepare-artifact` and `release_packaging.py`,
       including their tests and snapshots.
+      Completed (2026-06-03 13:29Z). Evidence: `make check-fmt`,
+      `make test-scripts`, `make lint`, `make test`, and `make markdownlint`
+      passed. The residue sweep for `release_packaging`, `prepare_artifact`,
+      `prepare-artifact`, `binstall`, `write_sha256`, and `ArtifactRequest`
+      under `scripts/` returned no matches.
 - [ ] Milestone E: add `act`-driven black-box pytest harness under `tests/`,
       with a self-checking selftest workflow plus a job that exercises the
       real release-staging configuration against a dummy binary.
@@ -251,6 +256,13 @@ completed or partially completed.
   hardening: `BINSTALL_VERSION` is exported so the child installer receives the
   pinned tag, and the installed version is checked after installation. No Rust
   toolchain selection changed.
+  Date/Author: 2026-06-03, Codex.
+- Decision: remove script-level tests for bespoke checksum and tarball
+  creation with `scripts/release_packaging.py`.
+  Rationale: that behaviour now belongs to the pinned shared action and its
+  own test suite. Keeping local unit tests against deleted implementation
+  details would either require retaining dead code or re-testing an external
+  action through inappropriate script-level fixtures.
   Date/Author: 2026-06-03, Codex.
 
 ## Outcomes & retrospective

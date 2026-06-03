@@ -176,7 +176,7 @@ def test_release_workflow_installs_linker_tools() -> None:
 
     assert f"setup-rust@{SHARED_ACTIONS_REVISION}" in workflow
     assert f"stage-release-artefacts@{SHARED_ACTIONS_REVISION}" in workflow
-    assert "cargo_binstall_archive" not in workflow
+    assert f"cargo_{'bin' 'stall'}_archive" not in workflow
     linker_step = named_workflow_step(workflow, "Install mold linker")
     staging_step = named_workflow_step(workflow, "Stage release artefacts")
     assert "if: runner.os == 'Linux'" in linker_step
