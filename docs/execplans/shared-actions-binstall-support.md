@@ -190,9 +190,33 @@ Risks differ from Surprises: risks are anticipated; surprises are not.
       passed. The residue sweep for `release_packaging`, `prepare_artifact`,
       `prepare-artifact`, `binstall`, `write_sha256`, and `ArtifactRequest`
       under `scripts/` returned no matches.
-- [ ] Milestone E: add `act`-driven black-box pytest harness under `tests/`,
+- [x] Milestone E: add `act`-driven black-box pytest harness under `tests/`,
       with a self-checking selftest workflow plus a job that exercises the
       real release-staging configuration against a dummy binary.
+      Completed (2026-06-03 16:47Z). Evidence: after resolving CodeRabbit's
+      requests for a descriptive `Cargo.toml` version failure, removal of
+      `act -b`, path-tolerant artefact assertions, and a custom manifest
+      exception type, plus follow-up requests for explicit runner-label image
+      mapping, unreadable-`Cargo.toml` handling, and simpler staged-name
+      derivation, `collections.abc.Mapping`, and lazy archive-name
+      computation, manifest error factory methods, immutable runner-label
+      mappings, restored module-scoped `act_runner` plus `staged_selftest`
+      fixtures, a selftest job timeout, and a dedicated `ZipSlipError`,
+      flattened `STAGED_FILES` metric output, and conditional root-level
+      `cmd_mox.pytest_plugin` loading with a root conftest docstring and
+      selftest `pull_request` path filters, list-only artefact directory
+      avoidance, explicit workspace-version type validation, broader conftest
+      import-error handling, typed `pytest_plugins`, and structural
+      workspace-version matching, structured YAML workflow parsing, zip
+      symlink rejection, simpler staged archive lookup, and declarative metric
+      detection, en-GB fixture prose, and structural workflow step-name
+      extraction, diagnostic step-name assertion output, workflow output
+      string normalization, and the `_act_support.py` shared support split,
+      `make test-workflow` passed
+      with three pytest cases, including the release workflow parse check and
+      two `act` executions of `stage-only`. In the same gate sequence,
+      `make check-fmt`, `make test-scripts`, `make lint`, `make test`, and
+      `make markdownlint` passed.
 - [ ] Milestone F: refresh `docs/release-process.md` and add a changelog
       entry; update any references in `AGENTS.md` if they mention the
       retired script.
@@ -206,6 +230,133 @@ completed or partially completed.
   `eff100c965da05e14fd4e07d7ea518408b312cb8` because the commit is not a
   remote ref tip. A shallow clone plus `git checkout` confirmed the commit is
   fetchable and is titled `Add cargo-binstall archive staging support (#270)`.
+  Date/Author: 2026-06-03, Codex.
+- `act` 0.2.88 stores uploaded artefacts as zip files below
+  `act-artifacts/<run-id>/<artifact-name>/<artifact-name>.zip` rather than as
+  an expanded directory. The workflow harness extracts the zip before
+  asserting on staged files.
+  Date/Author: 2026-06-03, Codex.
+- `act --json` emits workflow standard output in the `msg` field for raw
+  output records in this environment. The metric assertion checks `Output`,
+  `message`, and `msg` so it remains compatible with documented and observed
+  event shapes.
+  Date/Author: 2026-06-03, Codex.
+- CodeRabbit identified that `_workspace_version()` in the workflow harness
+  would raise an unclear `KeyError` at import time if `Cargo.toml` stopped
+  exposing `workspace.package.version`. The harness now raises a descriptive
+  `ReleaseManifestError` naming `Cargo.toml` and the missing key path.
+  Date/Author: 2026-06-03, Codex.
+- CodeRabbit identified that running `act` with `-b` bind-mounted the host
+  repository into the container and could leak workflow outputs back into the
+  worktree. The harness now lets `act` use its copied workspace model while
+  still exporting uploaded artefacts through `--artifact-server-path`.
+  Date/Author: 2026-06-03, Codex.
+- CodeRabbit identified that the selftest artefact assertion assumed a flat
+  zip extraction layout. The assertion now compares staged basenames and then
+  locates the cargo-binstall archive by basename before opening it.
+  Date/Author: 2026-06-03, Codex.
+- CodeRabbit identified that the `act` runner hard-coded only the
+  `ubuntu-latest` platform mapping. The runner now accepts an explicit
+  label-to-image map and emits every mapping through `-P`, with the fixture
+  mapping `ubuntu-latest` to `ACT_RUNNER_IMAGE` or the default runner image.
+  Date/Author: 2026-06-03, Codex.
+- CodeRabbit identified that import-time workspace version discovery should
+  convert unreadable `Cargo.toml` IO failures into the same
+  `ReleaseManifestError` family used for TOML and manifest-shape failures.
+  Date/Author: 2026-06-03, Codex.
+- CodeRabbit identified that the workflow harness should import `Mapping`
+  from `collections.abc` rather than `typing`, and that the expected
+  cargo-binstall archive name should be computed lazily so manifest failures
+  surface during the test rather than module import. Both changes have been
+  applied.
+  Date/Author: 2026-06-03, Codex.
+- CodeRabbit identified that manifest error strings belong on
+  `ReleaseManifestError`, that the frozen dataclass still needed an immutable
+  `runner_label_map`, and that module-scoped `act_runner` artefact
+  directories could accumulate uploads across tests. The harness now uses
+  exception factory methods, wraps the runner label map in `MappingProxyType`,
+  and provides a function-scoped `act_runner` fixture.
+  Date/Author: 2026-06-03, Codex.
+- After changing `act_runner` to function scope, `make test-workflow`
+  exposed that the dependent `staged_selftest` fixture was still
+  module-scoped. It is now function-scoped too, so each selftest assertion
+  gets a fresh `act` artefact directory.
+  Date/Author: 2026-06-03, Codex.
+- CodeRabbit subsequently preferred module-scoped `act_runner` and
+  `staged_selftest` fixtures so the slow selftest workflow runs once per
+  module. The fixtures are module-scoped again; the single module-level
+  selftest run still has an isolated temporary artefact directory, and the
+  selftest workflow job is bounded with `timeout-minutes: 30`.
+  Date/Author: 2026-06-03, Codex.
+- CodeRabbit requested that the zip-slip rejection message follow the same
+  error-factory pattern as manifest errors. The harness now raises
+  `ZipSlipError.escaped_member(...)` for unsafe zip members.
+  Date/Author: 2026-06-03, Codex.
+- CodeRabbit identified that the selftest metric could print a multi-line
+  `staged_files=` record because the shared action output may contain
+  newlines. The workflow now flattens `STAGED_FILES` with `tr '\n' ' '`
+  before echoing the metric field.
+  Date/Author: 2026-06-03, Codex.
+- CodeRabbit identified that pytest plugin declarations should be loaded from
+  a top-level `conftest.py`. The `cmd_mox.pytest_plugin` declaration now lives
+  at the repository root instead of `tests/conftest.py`.
+  Date/Author: 2026-06-03, Codex.
+- Moving the `cmd_mox.pytest_plugin` declaration to the root initially broke
+  `make test-scripts` because that target does not install `cmd-mox`. The
+  root `conftest.py` now declares the plugin only when `cmd_mox` is importable,
+  preserving script tests while still loading the plugin for `make
+  test-workflow`.
+  Date/Author: 2026-06-03, Codex.
+- The first conditional plugin implementation imported `cmd_mox.pytest_plugin`
+  while checking availability, causing a `PytestAssertRewriteWarning` during
+  `make test-workflow`. The root `conftest.py` now uses
+  `importlib.util.find_spec` so pytest imports the plugin itself, with
+  `ModuleNotFoundError` handling for environments where the parent `cmd_mox`
+  package is not installed.
+  Date/Author: 2026-06-03, Codex.
+- CodeRabbit requested a module-level docstring for the root `conftest.py`,
+  a terser `pytest_plugins` assignment, and a path filter for the selftest
+  workflow's `pull_request` trigger. The root pytest configuration now
+  documents why plugin loading is conditional, and the selftest workflow only
+  runs automatically when its workflow, staging configuration, event fixture,
+  or workflow harness tests change.
+  Date/Author: 2026-06-03, Codex.
+- CodeRabbit identified that list-only `act` runs should not create an
+  artefact directory, and that `_workspace_version()` should validate
+  `workspace.package.version` is a string before returning it. The harness now
+  creates the artefact directory only when passing `--artifact-server-path`
+  and raises `ReleaseManifestError.invalid_version_value(...)` for malformed
+  manifest values.
+  Date/Author: 2026-06-03, Codex.
+- CodeRabbit requested broader `ImportError` handling and an explicit
+  `tuple[str, ...]` annotation for root `pytest_plugins`, plus a structural
+  `match` in `_workspace_version()` so manifest parsing and version-shape
+  validation are separated. Those refinements have been applied.
+  Date/Author: 2026-06-03, Codex.
+- CodeRabbit requested a structured release workflow assertion instead of a
+  raw substring check. `make test-workflow` now includes ephemeral `pyyaml`
+  via `uv --with pyyaml`, and the test parses `.github/workflows/release.yml`
+  to assert that the `build` job contains a step named
+  `Stage release artefacts`. This does not add package metadata or a
+  top-level project dependency.
+  Date/Author: 2026-06-03, Codex.
+- CodeRabbit requested an explicit module-scope safety note for the shared
+  `act_runner` artefact directory, symlink rejection during uploaded zip
+  extraction, a simpler cargo-binstall archive lookup, and declarative metric
+  detection. The harness now documents the single-artifact-per-module
+  assumption, rejects symlink zip entries with `ZipSlipError`, searches staged
+  path values directly, and uses `any(...)` over normalized workflow outputs.
+  Date/Author: 2026-06-03, Codex.
+- CodeRabbit requested en-GB spelling in the `act_runner` fixture docstring
+  and structural pattern matching for release workflow step-name extraction.
+  The docstring now uses `artefact` in prose, and the release workflow dry-run
+  test extracts step names through `_step_name(...)`.
+  Date/Author: 2026-06-03, Codex.
+- CodeRabbit requested diagnostic output for the release workflow step-name
+  assertion, string normalization for workflow event output fields, and moving
+  shared test support symbols out of `conftest.py`. `_act_support.py` now owns
+  `PROJECT_ROOT`, `ActRunner`, and `combined_logs`, while `tests/conftest.py`
+  only keeps the pytest fixture and subprocess runner.
   Date/Author: 2026-06-03, Codex.
 
 ## Decision log
@@ -263,6 +414,14 @@ completed or partially completed.
   own test suite. Keeping local unit tests against deleted implementation
   details would either require retaining dead code or re-testing an external
   action through inappropriate script-level fixtures.
+  Date/Author: 2026-06-03, Codex.
+- Decision: pin local workflow validation to the default
+  `catthehacker/ubuntu:act-latest` image unless `ACT_RUNNER_IMAGE` overrides
+  it.
+  Rationale: this matches the imported local-validation guide while allowing
+  developers to reproduce a different runner image explicitly. The environment
+  used for milestone E was `act version 0.2.88` with runner image digest
+  `sha256:e411c361daee81b1a7f0924fe9d4d3937275cd73ce56f5caede292e8accb4138`.
   Date/Author: 2026-06-03, Codex.
 
 ## Outcomes & retrospective

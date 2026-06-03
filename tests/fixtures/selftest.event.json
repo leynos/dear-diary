@@ -1,0 +1,19 @@
+{
+  "pull_request": {
+    "head": {
+      "ref": "selftest-release-staging"
+    },
+    "number": 1
+  },
+  "repository": {
+    "default_branch": "main",
+    "full_name": "leynos/dear-diary",
+    "name": "dear-diary",
+    "owner": {
+      "login": "leynos"
+    }
+  },
+  "sender": {
+    "login": "local-act"
+  }
+}
