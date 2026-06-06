@@ -1,4 +1,4 @@
-.PHONY: help all clean test test-scripts build release lint fmt check-fmt markdownlint nixie
+.PHONY: help all clean test test-scripts test-workflow build release lint fmt check-fmt markdownlint nixie
 
 
 TARGET ?= dear-diary
@@ -30,6 +30,9 @@ test: ## Run tests with warnings treated as errors
 
 test-scripts: ## Run Python script tests
 	$(PYTEST) scripts/tests
+
+test-workflow: ## Run act-backed workflow tests; requires act and Docker/Podman
+	uv run --with pytest --with cmd-mox --with pyyaml python -m pytest tests/
 
 target/%/$(TARGET): ## Build binary in debug or release mode
 	$(CARGO) build $(BUILD_JOBS) $(if $(findstring release,$(@)),--release) --bin $(TARGET)
