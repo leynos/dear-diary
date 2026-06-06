@@ -111,12 +111,14 @@ class SubprocessActRunner:
                     "--artifact-server-path",
                     str(self.artifact_dir),
                     "--json",
+                    "--rm",
                 ]
             )
         return subprocess.run(  # noqa: S603 -- hard-coded executable, safe subprocess call with shell=False
             command,
             cwd=PROJECT_ROOT,
             capture_output=True,
+            env=_act_environment(),
             text=True,
             timeout=1200,
             check=False,
@@ -136,3 +138,17 @@ def act_runner(tmp_path_factory: pytest.TempPathFactory) -> ActRunner:
         artifact_dir=tmp_path_factory.mktemp("act-artifacts"),
         runner_label_map={"ubuntu-latest": runner_image},
     )
+
+
+def _act_environment() -> dict[str, str]:
+    """Return the subprocess environment for `act` invocations."""
+    environment = os.environ.copy()
+    if "DOCKER_HOST" not in environment and (socket := _podman_socket()).exists():
+        environment["DOCKER_HOST"] = f"unix://{socket}"
+    return environment
+
+
+def _podman_socket() -> Path:
+    """Return the conventional rootless Podman Docker API socket path."""
+    runtime_dir = os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}")
+    return Path(runtime_dir) / "podman" / "podman.sock"

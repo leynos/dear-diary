@@ -111,24 +111,25 @@ rerun replaces existing files instead of failing on duplicates.
 
 ## Release helper script
 
-Release version checks live in `scripts/release_version.py`. Artefact copying,
-archive generation, and checksum creation live in
-`scripts/release_packaging.py`. The `scripts/release_support.py` script keeps
-the command-line wiring thin. Keep this logic in scripts rather than embedding
-it directly in workflow shell blocks so it remains testable.
+Release version checks live in `scripts/release_version.py` and are exposed by
+`scripts/release_support.py verify-version`. Artefact copying, checksum
+creation, and cargo-binstall archive generation are delegated to the pinned
+`leynos/shared-actions/.github/actions/stage-release-artefacts` composite
+action. Its local configuration is `.github/release-staging.toml`.
 
-The helper is split across focused modules to keep each file comfortably under
-the project size limit and to make command wiring, manifest validation, and
-packaging side effects independently reviewable. Release automation also pins
-external Git references rather than using floating tags; for example, the
-workflow installs `cross` from a fixed revision so reruns use the same source.
+Keep project-specific checks in scripts and shared release staging in the
+shared action. This keeps version validation testable inside this repository
+while avoiding bespoke packaging code that must be maintained in every
+consumer. Release automation also pins external Git references rather than
+using floating tags; for example, the workflow installs `cross` from a fixed
+revision and calls shared actions at a fixed commit so reruns use the same
+source.
 
 The script follows the repository scripting standards:
 
 - `uv` executes the script with its declared Python dependencies.
 - Cyclopts maps `INPUT_*` workflow environment variables to typed parameters.
-- Pure helper functions in focused modules handle version resolution, tag
-  validation, archive creation, and checksum manifest creation.
+- Pure helper functions handle version resolution and tag validation.
 
 Run the script tests with:
 
@@ -137,21 +138,30 @@ make test-scripts
 ```
 
 The tests verify workspace-inherited Cargo versions, tag/version matching,
-Cyclopts environment mapping, GitHub Actions upload wiring, `cargo-binstall`
-metadata, archive layout, and checksum manifests that contain only asset
-basenames. Snapshot tests pin the command output shape for the release helper
-commands.
+Cyclopts environment mapping, GitHub Actions upload wiring, shared staging
+configuration, cargo-binstall metadata, archive layout, and checksum manifests
+that contain only asset basenames. Snapshot tests pin the command output shape
+for the release helper commands.
 
 GitHub Actions installs `uv` with `astral-sh/setup-uv` before running the
 release helper. The helper targets Python 3.13, matching the repository
 scripting standards for new automation.
+
+Run the act-backed release workflow harness with:
+
+```bash
+make test-workflow
+```
+
+This validates the release workflow graph and exercises the shared staging
+configuration against a dummy Linux release binary.
 
 ## Release artefacts
 
 Each matrix build writes artefacts under `artifacts/<os>-<arch>`. The uploaded
 binary uses the package-name-based pattern `dear-diary-<os>-<arch>`.
 
-For Linux GNU `cargo-binstall` targets, the helper also creates:
+For Linux GNU `cargo-binstall` targets, the shared staging action also creates:
 
 ```plaintext
 dear-diary-<version>-<target>.tar.gz

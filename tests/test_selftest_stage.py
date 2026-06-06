@@ -20,6 +20,7 @@ drifted from the release contract.
 from __future__ import annotations
 
 import json
+import re
 import stat
 import subprocess
 import tarfile
@@ -160,6 +161,13 @@ def test_stage_only_produces_expected_artefacts(
         f"missing staged files: expected={sorted(expected_files)} "
         f"actual={sorted(staged_names)}"
     )
+    binary_sidecar = _staged_path_named(staged_paths, "dear-diary-linux-x86_64.sha256")
+    binstall_sidecar = _staged_path_named(
+        staged_paths,
+        f"{binstall_archive_name}.sha256",
+    )
+    _assert_checksum_sidecar(binary_sidecar, "dear-diary-linux-x86_64")
+    _assert_checksum_sidecar(binstall_sidecar, binstall_archive_name)
 
     archive_path = next(
         (path for path in staged_paths.values() if path.name == binstall_archive_name),
@@ -169,6 +177,22 @@ def test_stage_only_produces_expected_artefacts(
     with tarfile.open(archive_path, "r:gz") as archive:
         members = archive.getnames()
         assert members == ["dear-diary"], f"unexpected archive members: {members}"
+
+
+def _staged_path_named(staged_paths: dict[str, Path], filename: str) -> Path:
+    """Return a staged path by basename."""
+    path = next((path for path in staged_paths.values() if path.name == filename), None)
+    assert path is not None, f"missing staged file {filename}: {staged_paths}"
+    return path
+
+
+def _assert_checksum_sidecar(sidecar_path: Path, asset_name: str) -> None:
+    """Assert that a checksum sidecar uses the pinned shared-action format."""
+    content = sidecar_path.read_text(encoding="utf-8")
+    expected = rf"[0-9a-f]{{64}}  {re.escape(asset_name)}\n"
+    assert re.fullmatch(expected, content), (
+        f"unexpected checksum sidecar format in {sidecar_path}: {content!r}"
+    )
 
 
 def test_stage_only_emits_metric(

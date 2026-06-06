@@ -22,9 +22,9 @@ something you have already forgotten a thousand times.
 
 Dear Diary is a [Model Context Protocol](https://modelcontextprotocol.io/)
 (MCP) server that provides AI coding agents with persistent semantic memory.
-Built on [Qdrant](https://qdrant.tech/) vector database and local embeddings
-via [FastEmbed](https://github.com/Qdrant/fastembed), it offers a sanctuary
-where thoughts can endure beyond the ephemeral boundaries of a single session.
+Built on [Qdrant](https://qdrant.tech/) vector database and local embeddings via
+[FastEmbed](https://github.com/Qdrant/fastembed), it offers a sanctuary where
+thoughts can endure beyond the ephemeral boundaries of a single session.
 
 Store what matters. Find it again. Let the memories fade gracefully when their
 time has passed.

@@ -31,18 +31,36 @@ workflow run while other targets build.
 
 The `release.yml` workflow defines a matrix of operating system and
 architecture combinations. Each entry includes the target triple used by
-`cross` and whether the target also needs a `cargo-binstall` archive. During
-the build job, `cross` compiles the `dear-diary` package release binary for
-every matrix row.
+`cross`. During the build job, `cross` compiles the `dear-diary` package
+release binary for every matrix row.
 
 `cross` is installed from a specific git tag to avoid unexpected behaviour from
-its main branch. Each binary is placed in an `artifacts/<os>-<arch>` directory
-using the naming pattern `dear-diary-<os>-<arch>`. An SHA-256 checksum is
-written alongside each binary for download verification. The Linux
-`cargo-binstall` targets additionally produce
-`dear-diary-<version>-<target>.tar.gz` plus a matching SHA-256 checksum.
+its main branch. Release staging is delegated to the pinned shared action
+`leynos/shared-actions/.github/actions/stage-release-artefacts`, using
+`.github/release-staging.toml` as the source of truth for target names,
+destination filenames, checksum sidecars, and cargo-binstall archive settings.
+
+Each binary is placed in an `artifacts/<os>-<arch>` directory using the naming
+pattern `dear-diary-<os>-<arch>`. An SHA-256 checksum is written alongside each
+binary for download verification. The Linux `cargo-binstall` targets
+additionally produce `dear-diary-<version>-<target>.tar.gz` plus a matching
+SHA-256 checksum. FreeBSD builds publish the binary and checksum only because
+the package's cargo-binstall metadata advertises Linux GNU archives.
 
 After every build completes, the artefact is uploaded so that the GitHub
 Actions interface provides it immediately. Once the matrix has finished, the
 `release` job downloads all artefacts and uploads them to the GitHub release
 using `gh release upload`.
+
+## Local workflow validation
+
+Run the black-box workflow harness with:
+
+```bash
+make test-workflow
+```
+
+This target uses `act` through pytest. It parses the release workflow graph,
+runs `.github/workflows/selftest-staging.yml` against a dummy Linux binary, and
+asserts that the shared staging action produces the expected binary, checksum,
+cargo-binstall archive, and structured metric output.

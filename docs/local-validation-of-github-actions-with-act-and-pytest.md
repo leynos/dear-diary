@@ -18,6 +18,14 @@ containers execute in isolation.
 ## Prerequisites
 
 - Docker daemon available.
+- For rootless Podman, start the Docker-compatible user socket before running
+  `act`:
+
+  ```bash
+  systemctl --user start podman.socket
+  export DOCKER_HOST="unix://${XDG_RUNTIME_DIR}/podman/podman.sock"
+  ```
+
 - `act` installed.
 - Python 3.10+ with `pytest`.
 - Optional but recommended: pin an image to reduce drift:
@@ -125,6 +133,7 @@ def run_act(
         "--artifact-server-path",
         str(artifact_dir),
         "--json",  # machine-parseable log stream
+        "--rm",  # clean failed workflow containers
         "-b",  # bind-mount repo as workspace (preserves side effects)
     ]
     completed = subprocess.run(cmd, text=True, capture_output=True)
@@ -169,17 +178,14 @@ record, replay, and verify loop:
 1. **Record** a golden trace with passthrough spies.
 
    ```python
-   from cmd_mox import CmdMox
-
-   def test_record(tmp_path: Path) -> None:
+   def test_record(tmp_path: Path, cmd_mox) -> None:
        artifact_dir = tmp_path / "act-artifacts"
-       with CmdMox() as mox:
-           gh = mox.spy("gh").passthrough()
-           mox.replay()
-           code, _, logs = run_act(artifact_dir=artifact_dir)
-           assert code == 0, logs
-           mox.verify()
-           assert gh.call_count == 1
+       gh = cmd_mox.spy("gh").passthrough()
+       cmd_mox.replay()
+       code, _, logs = run_act(artifact_dir=artifact_dir)
+       assert code == 0, logs
+       cmd_mox.verify()
+       assert gh.call_count == 1
    ```
 
 2. **Replay** deterministically with mocks. Configure expectations using the
