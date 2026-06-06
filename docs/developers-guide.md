@@ -109,6 +109,11 @@ The release job declares `contents: write` because it creates or updates the
 GitHub release and uploads release assets. Asset uploads use `--clobber` so a
 rerun replaces existing files instead of failing on duplicates.
 
+The shared-actions adoption is tracked in
+[`docs/execplans/shared-actions-binstall-support.md`](execplans/shared-actions-binstall-support.md).
+Consult that ExecPlan before changing release staging, artefact names,
+checksum sidecars, or the cargo-binstall archive contract.
+
 ## Release helper script
 
 Release version checks live in `scripts/release_version.py` and are exposed by
@@ -125,10 +130,13 @@ using floating tags; for example, the workflow installs `cross` from a fixed
 revision and calls shared actions at a fixed commit so reruns use the same
 source.
 
-The script follows the repository scripting standards:
+Python release automation follows
+[`docs/scripting-standards.md`](scripting-standards.md):
 
 - `uv` executes the script with its declared Python dependencies.
 - Cyclopts maps `INPUT_*` workflow environment variables to typed parameters.
+- New automation that executes external commands uses `cuprum` rather than
+  `subprocess`, `os.system`, or legacy `plumbum` helpers.
 - Pure helper functions handle version resolution and tag validation.
 
 Run the script tests with:
@@ -154,7 +162,10 @@ make test-workflow
 ```
 
 This validates the release workflow graph and exercises the shared staging
-configuration against a dummy Linux release binary.
+configuration against a dummy Linux release binary. The harness follows
+[`docs/local-validation-of-github-actions-with-act-and-pytest.md`](local-validation-of-github-actions-with-act-and-pytest.md):
+drive `act` from `pytest`, capture uploaded artefacts through the artefact
+server, and assert on structured logs and files as a black-box workflow test.
 
 ## Release artefacts
 
