@@ -163,8 +163,7 @@ Risks differ from Surprises: risks are anticipated; surprises are not.
       `dear-diary-0.1.0-x86_64-unknown-linux-gnu.tar.gz`, and
       `dear-diary-0.1.0-x86_64-unknown-linux-gnu.tar.gz.sha256`; `tar -tzf`
       reported the single member `dear-diary`; `sha256sum -c` passed for both
-      sidecars. Full log:
-      `/tmp/stage-proof-dear-diary-chore_plan-shared-actions-binstall-update.out`.
+      sidecars. The full proof log was saved under `/tmp` for this branch.
 - [x] Milestone C: switch `.github/workflows/release.yml` to the shared
       action; unify shared-action SHA across `release.yml` and `ci.yml`.
       Completed (2026-06-03 13:16Z). Evidence: `make check-fmt`,
@@ -435,10 +434,10 @@ triple. The matrix carries a `cargo_binstall_archive` boolean indicating
 whether the entry should produce a binstall tarball; today that is `true` for
 the two Linux gnu targets and `false` for FreeBSD. The build job checks out the
 repo, sets up Python and `uv`, verifies the tag against `Cargo.toml`, sets up
-Rust via
-`leynos/shared-actions/.github/actions/setup-rust@d400b079fb6a8fa92f7e7b6c57f3d1c92a4b2d54`,
-installs `mold`, installs `cross` from a pinned git rev, restores the cargo
-cache, builds the release binary with `cross`, and finally invokes
+Rust via `leynos/shared-actions/.github/actions/setup-rust` at SHA
+`d400b079fb6a8fa92f7e7b6c57f3d1c92a4b2d54`, installs `mold`, installs `cross`
+from a pinned git rev, restores the cargo cache, builds the release binary with
+`cross`, and finally invokes
 `uv run scripts/release_support.py prepare-artifact` to copy the binary into
 `artifacts/<os>-<arch>/`, write its `.sha256` sidecar, and (when
 `cargo_binstall_archive` is true) write the binstall tarball with a matching
@@ -462,16 +461,17 @@ The CI workflow at `.github/workflows/ci.yml` references the same
 `eff100c9...` so the repository carries one consistent SHA.
 
 The shared action this plan adopts is
-`leynos/shared-actions/.github/actions/stage-release-artefacts@eff100c965da05e14fd4e07d7ea518408b312cb8`.
-Its README documents two halves: a generic artefact staging mechanism (input
-`config-file` plus `target`, output `binary-path` and `staged-files`), and a
-new opt-in cargo-binstall archive feature controlled by a `[common.binstall]` or
-`[targets.<name>.binstall]` table. The action exports `binstall-archive-path`
-when the feature is enabled. The archive name defaults to
-`{package_name}-{version}-{target}.tar.gz`, which is exactly the naming
-convention this repository uses today, so no override is required. The archive
-member name defaults to `{bin_name}{bin_ext}`, which yields `dear-diary` on
-Linux. The archive's `.sha256` sidecar is written next to it.
+`leynos/shared-actions/.github/actions/stage-release-artefacts` at SHA
+`eff100c965da05e14fd4e07d7ea518408b312cb8`. Its README documents two halves: a
+generic artefact staging mechanism (input `config-file` plus `target`, output
+`binary-path` and `staged-files`), and a new opt-in cargo-binstall archive
+feature controlled by a `[common.binstall]` or `[targets.<name>.binstall]`
+table. The action exports `binstall-archive-path` when the feature is enabled.
+The archive name defaults to `{package_name}-{version}-{target}.tar.gz`, which
+is exactly the naming convention this repository uses today, so no override is
+required. The archive member name defaults to `{bin_name}{bin_ext}`, which
+yields `dear-diary` on Linux. The archive's `.sha256` sidecar is written next
+to it.
 
 Two reference documents have been imported into `docs/` prior to drafting this
 plan:
@@ -581,8 +581,10 @@ Validate the staging configuration locally before touching the workflow:
 3. Confirm the resulting tree:
    - `artifacts/linux-x86_64/dear-diary-linux-x86_64`
    - `artifacts/linux-x86_64/dear-diary-linux-x86_64.sha256`
-   - `artifacts/linux-x86_64/dear-diary-<version>-x86_64-unknown-linux-gnu.tar.gz`
-   - `artifacts/linux-x86_64/dear-diary-<version>-x86_64-unknown-linux-gnu.tar.gz.sha256`
+   - cargo-binstall archive under `artifacts/linux-x86_64/`:
+     `dear-diary-<version>-x86_64-unknown-linux-gnu.tar.gz`
+   - cargo-binstall checksum under `artifacts/linux-x86_64/`:
+     `dear-diary-<version>-x86_64-unknown-linux-gnu.tar.gz.sha256`
    where `<version>` is resolved from `crates/dear-diary/Cargo.toml` (the
    workspace version is inherited).
 4. Untar the archive and confirm exactly one member named `dear-diary`.
@@ -822,7 +824,8 @@ GitHub-hosted validation ladder for that path only.
   - `docs/local-validation-of-github-actions-with-act-and-pytest.md`
   - `docs/scripting-standards.md` (overwritten with the upstream version)
 - Shared action under test:
-  `leynos/shared-actions/.github/actions/stage-release-artefacts@eff100c965da05e14fd4e07d7ea518408b312cb8`
+  - path: `leynos/shared-actions/.github/actions/stage-release-artefacts`
+  - SHA: `eff100c965da05e14fd4e07d7ea518408b312cb8`
 - Existing local staging code that this plan retires:
   - `scripts/release_packaging.py`
   - the `prepare_artifact` command in `scripts/release_support.py`
