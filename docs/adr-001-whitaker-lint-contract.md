@@ -22,9 +22,10 @@ startup configuration behaviour difficult to review.
 
 The project adopts Whitaker as part of the local and CI lint contract. The
 `make lint` target runs Rustdoc, Clippy, and Whitaker. Continuous Integration
-(CI) installs the pinned Whitaker installer revision and runs
+(CI) installs the versioned `whitaker-installer` release from crates.io and runs
 `whitaker-installer --cranelift` immediately before `make lint`, matching the
-same contract contributors run locally.
+same contract contributors run locally. The suite itself follows the rolling
+Whitaker release.
 
 Whitaker findings are treated as design feedback. When the suite reports
 complexity in production code, the preferred response is to extract named
@@ -36,7 +37,7 @@ panicking or hiding fallibility.
 ## Consequences
 
 - Pull requests must keep Rustdoc, Clippy, and Whitaker green before review.
-- CI takes on an additional setup step for the pinned Whitaker installer.
+- CI takes on an additional setup step for the versioned Whitaker installer.
 - Refactors driven by Bumpy Road findings should favour small private helpers
   over lint suppressions.
 - Test helpers must avoid `.expect()` outside recognized test bodies; when a
