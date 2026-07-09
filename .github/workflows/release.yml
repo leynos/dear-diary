@@ -49,7 +49,7 @@ jobs:
           "${{ steps.setup-python.outputs.python-path }}" --version
           uv run scripts/release_support.py verify-version
       - name: Setup Rust
-        uses: leynos/shared-actions/.github/actions/setup-rust@eff100c965da05e14fd4e07d7ea518408b312cb8
+        uses: leynos/shared-actions/.github/actions/setup-rust@927edd45ae77be4251a8a18ca9eb5613a2e32cbd
       - name: Install mold linker
         if: runner.os == 'Linux'
         run: |
