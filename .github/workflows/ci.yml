@@ -35,7 +35,7 @@ jobs:
             !**/target/**
             !**/dist/**
       - name: Setup uv
-        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39
       - name: Cache Whitaker installer
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae
         with:
