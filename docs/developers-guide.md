@@ -38,13 +38,13 @@ rustup component add rustc-codegen-cranelift-preview
 ```
 
 `make lint` runs Rustdoc, Clippy, and Whitaker. Install Whitaker through the
-upstream installer before running the full lint target locally:
+versioned installer from crates.io before running the full lint target locally
+(CI pins the same installer version through the `WHITAKER_INSTALLER_VERSION`
+environment variable in `.github/workflows/ci.yml`; the suite itself follows
+the rolling Whitaker release):
 
 ```bash
-cargo install --locked \
-  --git https://github.com/leynos/whitaker \
-  --rev f768c2e53c47df13658af1168a67851d388750bf \
-  whitaker-installer
+cargo install --locked whitaker-installer --version 0.2.5
 whitaker-installer --cranelift
 ```
 
