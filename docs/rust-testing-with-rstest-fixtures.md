@@ -20,7 +20,7 @@ objects used as a baseline for running tests. The primary purpose of a fixture
 is to ensure that a well-known, controlled environment exists before tests run,
 so the results remain repeatable. Test dependencies, such as database
 connections, user objects, or specific configurations, often require careful
-setup before a test executes and, sometimes, teardown afterward. Managing this
+setup before a test executes and, sometimes, teardown afterwards. Managing this
 setup, together with the teardown logic, within each test function can lead to
 considerable boilerplate and repetition, making tests harder to read, maintain,
 and extend.
@@ -323,7 +323,7 @@ operates on a known, independent baseline. The `#[once]` attribute, discussed
 later, provides an explicit mechanism to opt into shared fixture state when
 isolation is not a concern, or when the cost of fixture creation is prohibitive.
 
-## IV. Parameterised tests with `rstest`
+## IV. Parameterized tests with `rstest`
 
 `rstest` excels at creating parameterized tests, allowing a single test logic
 to be executed with multiple sets of input data. This is achieved primarily
@@ -1175,8 +1175,8 @@ parameterization
 | Feature                                  | Standard #[test] Approach                                     | rstest Approach                                                                  |
 | ---------------------------------------- | ------------------------------------------------------------- | -------------------------------------------------------------------------------- |
 | Fixture Injection                        | Manual calls to setup functions within each test.             | Fixture name as argument in #[rstest] function; fixture defined with #[fixture]. |
-| Parameterised Tests (Specific Cases)     | Loop inside one test, or multiple distinct #[test] functions. | #[case(…)] attributes on #[rstest] function.                                     |
-| Parameterised Tests (Value Combinations) | Nested loops inside one test, or complex manual generation.   | #[values(…)] attributes on arguments of #[rstest] function.                      |
+| Parameterized Tests (Specific Cases)     | Loop inside one test, or multiple distinct #[test] functions. | #[case(…)] attributes on #[rstest] function.                                     |
+| Parameterized Tests (Value Combinations) | Nested loops inside one test, or complex manual generation.   | #[values(…)] attributes on arguments of #[rstest] function.                      |
 | Async Fixture Setup                      | Manual async block and .await calls inside test.              | async fn fixtures, with #[future] and #[awt] for ergonomic `.await`ing.          |
 | Reusing Parameter Sets                   | Manual duplication of cases or custom helper macros.          | rstest_reuse crate with #[template] and #[apply] attributes.                     |
 
@@ -1190,7 +1190,7 @@ clarity of test intentions.
 
 - **Complex Setups:** When tests require non-trivial setup or shared state
   (e.g., database connections, mock servers, complex data structures).
-- **Parameterised Testing:** When a piece of logic needs to be tested against
+- **Parameterized Testing:** When a piece of logic needs to be tested against
   numerous input combinations or specific edge cases.
 - **Improved Readability:** Use fixtures when the dependencies must be
   immediately obvious from the function signature.
@@ -1213,7 +1213,7 @@ mind:
   times for test suites, especially large ones. Debugging macro-related issues
   can also be less straightforward if the developer is unfamiliar with how the
   macros expand.
-- **Debugging Parameterised Tests:** `rstest` generates individual test
+- **Debugging Parameterized Tests:** `rstest` generates individual test
   functions for parameterized cases, often named like
   `test_function_name::case_N`. Understanding this naming convention is helpful
   for identifying and running specific failing cases with
