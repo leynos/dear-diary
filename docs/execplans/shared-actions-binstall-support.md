@@ -505,7 +505,7 @@ Read the shared action's README and the binstall test job in its workflow
 `test-stage-artefacts-binstall`) to confirm the exact TOML schema and the
 exact outputs available. Confirm the inputs to `stage-release-artefacts` match
 what this repository can supply: a TOML config file path, a target key, and
-(optionally) the Windows-path-normalisation flag. Confirm the release
+(optionally) the Windows-path-normalization flag. Confirm the release
 workflow's existing matrix variables can map cleanly to a target table per
 matrix row.
 

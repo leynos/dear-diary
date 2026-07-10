@@ -99,7 +99,7 @@ Built with care in Rust, because memory safety matters—especially for memories
 
 ## A final thought
 
-We are, all of us, creatures of memory. The patterns we recognise, the
+We are, all of us, creatures of memory. The patterns we recognize, the
 associations we draw, the context we carry—these define who we are and how we
 help. In a world where every conversation is an island, Dear Diary builds
 bridges.
