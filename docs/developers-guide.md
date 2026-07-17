@@ -44,7 +44,7 @@ environment variable in `.github/workflows/ci.yml`; the suite itself follows
 the rolling Whitaker release):
 
 ```bash
-cargo install --locked whitaker-installer --version 0.2.5
+cargo install --locked whitaker-installer --version 0.2.6
 whitaker-installer --cranelift
 ```
 
