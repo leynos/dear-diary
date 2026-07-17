@@ -328,7 +328,7 @@ completed or partially completed.
 - CodeRabbit requested an explicit module-scope safety note for the shared
   `act_runner` artefact directory, symlink rejection during uploaded zip
   extraction, a simpler cargo-binstall archive lookup, and declarative metric
-  detection. The harness now documents the single-artifact-per-module
+  detection. The harness now documents the single-artefact-per-module
   assumption, rejects symlink zip entries with `ZipSlipError`, searches staged
   path values directly, and uses `any(...)` over normalized workflow outputs.
   Date/Author: 2026-06-03, Codex.
@@ -818,7 +818,7 @@ If milestone E reveals that `act` cannot reproduce a step that the GitHub
 runner handles, document the gap in `Surprises & Discoveries` and rely on the
 GitHub-hosted validation ladder for that path only.
 
-## Artifacts and notes
+## Artefacts and notes
 
 - Reference documents imported into `docs/` before drafting this plan:
   - `docs/local-validation-of-github-actions-with-act-and-pytest.md`
