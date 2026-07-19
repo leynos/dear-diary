@@ -1,5 +1,8 @@
 # Dear Diary
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](
+https://deepwiki.com/leynos/dear-diary)
+
 *A warm place for cold silicon hearts.*
 
 ______________________________________________________________________
