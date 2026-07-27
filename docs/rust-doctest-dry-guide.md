@@ -40,8 +40,8 @@ block found in the documentation comments[^3]:
 
 4. **Execution and Verification**: Finally, if compilation succeeds, the
    resulting executable is run. The test is considered to have passed if the
-   program runs to completion without panicking. The executable is then deleted.
-   [^2]
+   program runs to completion without panicking. The executable is then
+   deleted.[^2]
 
 The significance of this model cannot be overstated. It effectively transforms
 every doctest into a true integration test.[^6] The test code does not have
@@ -271,8 +271,8 @@ table provides a comparative reference for the most common doctest attributes.
 
 - `edition20xx`: This attribute allows an example to be tested against a
   specific Rust edition. This is important for crates that support multiple
-  editions and need to demonstrate edition-specific features or migration paths.
-  [^4]
+  editions and need to demonstrate edition-specific features or migration
+  paths.[^4]
 
 ## The DRY principle in doctests: managing shared and complex logic
 
@@ -649,8 +649,8 @@ Accessed on July 15, 2026,
 [^14]: Stack Overflow — Conditionally executing a module-level doctest,
 accessed on July 15, 2026,
 <https://stackoverflow.com/questions/50312190/how-can-i-conditionally-execute-a-module-level-doctest-based-on-a-feature-flag>
-Stack Overflow — Conditional compilation with doctests, accessed on July 15,
-2025,
+Stack Overflow — Conditional compilation with doctests, accessed on
+July 15, 2025,
 <https://stackoverflow.com/questions/38292741/how-would-one-achieve-conditional-compilation-with-rust-projects-that-have-docte>
 [^15]: Reddit — Preferred approaches for doc tests, accessed on July 15,
 2025,
