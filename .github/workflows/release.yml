@@ -32,14 +32,14 @@ jobs:
             target: x86_64-unknown-freebsd
             ext: ""
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - name: Setup Python 3.13
         id: setup-python
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
           python-version: '3.13'
       - name: Setup uv
-        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39
+        uses: astral-sh/setup-uv@ae62891fec2bb8e7d6c99fc78c9fec3a63790f8d
       - name: Verify tag matches Cargo.toml
         env:
           INPUT_CARGO_TOML_PATH: ${{ env.CARGO_TOML_PATH }}
@@ -49,7 +49,7 @@ jobs:
           "${{ steps.setup-python.outputs.python-path }}" --version
           uv run scripts/release_support.py verify-version
       - name: Setup Rust
-        uses: leynos/shared-actions/.github/actions/setup-rust@eff100c965da05e14fd4e07d7ea518408b312cb8
+        uses: leynos/shared-actions/.github/actions/setup-rust@57a33fa65e329db7edc81ece661f1a2e1d39868f
       - name: Install mold linker
         if: runner.os == 'Linux'
         run: |
@@ -58,7 +58,7 @@ jobs:
           sudo apt-get update \
             && sudo apt-get install --yes --no-install-recommends clang mold
       - name: Cache cross binary
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: ~/.cargo/bin/cross
           key: cross-v0.2.5-${{ runner.os }}
@@ -67,7 +67,7 @@ jobs:
           RUSTFLAGS: ""
         run: cargo install cross --git https://github.com/cross-rs/cross --rev 88f49ff79e777bef6d3564531636ee4d3cc2f8d2
       - name: Cache cargo registry
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: |
             ~/.cargo/registry
@@ -85,12 +85,12 @@ jobs:
           echo "metric=release_build_complete target=${{ matrix.target }} os=${{ matrix.os }} arch=${{ matrix.arch }}"
       - name: Stage release artefacts
         id: stage
-        uses: leynos/shared-actions/.github/actions/stage-release-artefacts@eff100c965da05e14fd4e07d7ea518408b312cb8
+        uses: leynos/shared-actions/.github/actions/stage-release-artefacts@57a33fa65e329db7edc81ece661f1a2e1d39868f
         with:
           config-file: .github/release-staging.toml
           target: ${{ matrix.key }}
       - name: Upload release artifact
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: ${{ env.REPO_NAME }}-${{ matrix.os }}-${{ matrix.arch }}
           path: ${{ steps.stage.outputs.artifact-dir }}
@@ -101,8 +101,8 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
-      - uses: softprops/action-gh-release@718ea10b132b3b2eba29c1007bb80653f286566b
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228
         with:
           generate_release_notes: true
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c

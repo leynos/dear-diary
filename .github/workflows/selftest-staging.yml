@@ -26,7 +26,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
       - name: Create dummy release binary
@@ -38,7 +38,7 @@ jobs:
           chmod +x "${binary}"
       - name: Stage release artefacts
         id: stage
-        uses: leynos/shared-actions/.github/actions/stage-release-artefacts@eff100c965da05e14fd4e07d7ea518408b312cb8
+        uses: leynos/shared-actions/.github/actions/stage-release-artefacts@57a33fa65e329db7edc81ece661f1a2e1d39868f
         with:
           config-file: .github/release-staging.toml
           target: linux-x86_64
@@ -52,7 +52,7 @@ jobs:
           echo "artifact_dir=${ARTIFACT_DIR}"
           echo "staged_files=$(printf '%s' "${STAGED_FILES}" | tr '\n' ' ')"
       - name: Upload staged artefacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: selftest-stage
           path: ${{ steps.stage.outputs.artifact-dir }}
