@@ -62,7 +62,7 @@ dotenvy = "0.15"
 insta = { version = "1.46", features = ["json", "redactions"] }
 mockall = "0.15"
 rstest = "0.26"
-rstest-bdd = "0.3"
+rstest-bdd = "0.5"
 
 [workspace.lints.clippy]
 pedantic = { level = "warn", priority = -1 }
