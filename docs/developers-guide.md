@@ -70,12 +70,12 @@ The architectural decision is recorded in
 The lint and Markdown gates enforce British English with Oxford `-ize`
 conventions through `make spelling`, which runs a pinned
 [`typos-config-builder`](https://github.com/leynos/typos-config-builder) gate.
-The gate regenerates `typos.toml` from the live shared estate dictionary and
-the `typos.local.toml` overlay on every run, checks maintained Markdown with
-its own pinned `typos` binary, and applies the shared phrase corrections that
+The gate regenerates `typos.toml` from the live shared estate dictionary and the
+`typos.local.toml` overlay on every run, checks maintained Markdown with its
+own pinned `typos` binary, and applies the shared phrase corrections that
 `typos` cannot express. Because the dictionary is live, `typos.toml` is never
-drift-checked in continuous integration (CI); the tracked copy is only a
-record of the last generated policy.
+drift-checked in continuous integration (CI); the tracked copy is only a record
+of the last generated policy.
 
 Add repository-only proper names or quoted upstream terms to
 `typos.local.toml`; never edit generated entries in `typos.toml` by hand.
