@@ -24,7 +24,7 @@
 - **Use consistent spelling and grammar.** Comments must use en-GB-oxendict
   ("-ize" / "-yse" / "-our") spelling and grammar, with the exception of
   references to external APIs. Markdown prose is enforced mechanically by the
-  pinned `typos` spelling gate in `make lint` and `make markdownlint`.
+  en-GB-oxendict spelling gate that `make lint` and `make markdownlint` run.
 - **Illustrate with clear examples.** Function documentation must include clear
   examples demonstrating the usage and outcome of the function. Test
   documentation should omit examples where the example serves only to reiterate
@@ -252,12 +252,13 @@ project:
 
 ## Markdown Guidance
 
-- Validate Markdown files using `make markdownlint`; this also runs the pinned
-  en-GB-oxendict `typos` spelling gate.
-- The spelling configuration `typos.toml` is generated. Put narrow
-  repository-only exceptions in `typos.local.toml`, then regenerate with
-  `uv run scripts/generate_typos_config.py`; never edit generated entries by
-  hand.
+- Validate Markdown files using `make markdownlint`; this also runs the
+  en-GB-oxendict spelling gate.
+- Run `make spelling` to check spelling on its own. The gate regenerates
+  `typos.toml` from the live shared dictionary and `typos.local.toml` on every
+  run, so `typos.toml` is never drift-checked in continuous integration (CI).
+- Put narrow repository-only exceptions in `typos.local.toml`; never edit
+  generated entries in `typos.toml` by hand.
 - Run `make fmt` after any documentation changes to format all Markdown
   files and fix table markup.
 - Validate Mermaid diagrams in Markdown files by running `make nixie`.
