@@ -67,16 +67,18 @@ The architectural decision is recorded in
 
 ### Spelling policy
 
-The lint and Markdown gates run pinned `typos` 1.48.0 with British English and
-Oxford `-ize` conventions. Before checking maintained Markdown, the generator
-refreshes the shared estate dictionary into an untracked local cache only when
-the authority is newer, then merges `typos.local.toml`. The generated
-`typos.toml` is reviewed and committed so a clean, network-restricted checkout
-can still enforce the last known-good policy.
+The lint and Markdown gates enforce British English with Oxford `-ize`
+conventions through `make spelling`, which runs a pinned
+[`typos-config-builder`](https://github.com/leynos/typos-config-builder) gate.
+The gate regenerates `typos.toml` from the live shared estate dictionary and
+the `typos.local.toml` overlay on every run, checks maintained Markdown with
+its own pinned `typos` binary, and applies the shared phrase corrections that
+`typos` cannot express. Because the dictionary is live, `typos.toml` is never
+drift-checked in continuous integration (CI); the tracked copy is only a
+record of the last generated policy.
 
 Add repository-only proper names or quoted upstream terms to
-`typos.local.toml`; never edit generated entries in `typos.toml` by hand. The
-gate also runs the helper's Python 3.13 tests with at least 90% line coverage.
+`typos.local.toml`; never edit generated entries in `typos.toml` by hand.
 
 Linux `x86_64-unknown-linux-gnu` builds link through `clang` with `mold`:
 
