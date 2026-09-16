@@ -6,13 +6,16 @@ schema = 1
 stems = []
 
 [words]
-# Microsoft product title: "Azure Architecture Center".
-accepted = ["Center"]
+accepted = []
 
 [words.corrections]
 
 [patterns]
-ignore = []
+# Inline code spans hold external identifiers that must keep their upstream
+# spelling: the act flag `--artifact-server-path`, the `mold` linker, and
+# `prepare_artifact` and friends in the execution plans. The shared dictionary
+# used to carry this expression and no longer does, so the repository keeps it.
+ignore = ['`[^`\n]+`']
 
 [files]
 exclude = []
