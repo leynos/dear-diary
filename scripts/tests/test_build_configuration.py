@@ -22,7 +22,7 @@ README = PROJECT_ROOT / "README.md"
 RELEASE_WORKFLOW = PROJECT_ROOT / ".github" / "workflows" / "release.yml"
 RUST_TOOLCHAIN = PROJECT_ROOT / "rust-toolchain.toml"
 USER_GUIDE = PROJECT_ROOT / "docs" / "users-guide.md"
-SHARED_ACTIONS_REVISION = "eff100c965da05e14fd4e07d7ea518408b312cb8"
+SHARED_ACTIONS_REVISION = "6cec89bac47a21cf756d68d638a9a510998e57f8"
 HARDENED_LINKER_INSTALL_COMMAND = (
     "apt-get update && sudo apt-get install --yes --no-install-recommends "
     "clang mold"
