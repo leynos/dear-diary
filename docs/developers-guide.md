@@ -6,36 +6,44 @@ This guide covers release automation and local validation for contributors.
 
 The workspace uses the pinned Nightly toolchain declared in
 `rust-toolchain.toml`. Nightly is required for the Rust 2024 edition and for
-Cargo's unstable `codegen-backend` profile configuration.
+the parallel `rustc` frontend.
 
-Development builds use the Cranelift code generation backend through
-`.cargo/config.toml`:
+Development, test, lint, and typecheck builds run on the repository's build
+standard, which `.cargo/config.toml` carries and the Makefile composes into the
+`RUSTFLAGS` its recipes assign:
 
-```toml
-[unstable]
-codegen-backend = true
-
-[profile.dev]
-codegen-backend = "cranelift"
-```
-
-This follows the build profile adopted in Weaver and Gauss, where Cranelift for
-development code generation and `mold` for Linux linking produced useful build
-performance improvements without changing the release artefact contract.
+- `-Zthreads=8`, the parallel `rustc` frontend, on every platform.
+- The `mold` linker on Linux, driven through `clang`.
 
 The pinned toolchain must include these Rust components:
 
 - `rustfmt`
 - `clippy`
-- `rustc-codegen-cranelift-preview`
 
 Install or repair the pinned toolchain using `rust-toolchain.toml` as the
 channel source of truth:
 
 ```bash
 rustup toolchain install
-rustup component add rustc-codegen-cranelift-preview
 ```
+
+### Cranelift exception
+
+Cranelift is not the development-profile codegen backend here, although Weaver
+and Gauss use it. It links this workspace only without the parallel frontend:
+under `-Zthreads=8` the link fails with undefined `aws_lc_0_45_0_*` symbols from
+`aws-lc-sys`. The build standard requires `-Zthreads=8`, and Cranelift is kept
+only where the full suite passes, so the backend is dropped rather than the
+frontend flag. The evidence, measured on the pinned Nightly on 2026-09-29 and
+kept with the pull request that adopted the standard:
+
+- Cranelift with `-Zthreads=8` fails to link, in two separate runs.
+- Cranelift alone links.
+- LLVM with `-Zthreads=8` links.
+
+`scripts/tests/test_build_configuration.py` fails if a `codegen-backend` key or
+the Cranelift component returns to the configuration. Revisit the exception when
+`aws-lc-sys` links under Cranelift with the parallel frontend.
 
 `make lint` runs Rustdoc, Clippy, and Whitaker. Install Whitaker through the
 versioned installer from crates.io before running the full lint target locally
@@ -45,7 +53,7 @@ the rolling Whitaker release):
 
 ```bash
 cargo install --locked whitaker-installer --version 0.2.6
-whitaker-installer --cranelift
+whitaker-installer
 ```
 
 Whitaker is a Dylint-based lint suite used to catch architectural and code
@@ -85,7 +93,7 @@ Linux `x86_64-unknown-linux-gnu` builds link through `clang` with `mold`:
 ```toml
 [target.x86_64-unknown-linux-gnu]
 linker = "clang"
-rustflags = ["-C", "link-arg=-fuse-ld=mold"]
+rustflags = ["-Zthreads=8", "-Clink-arg=-fuse-ld=mold"]
 ```
 
 Install `clang` and `mold` before running local Linux builds that use that host
@@ -94,10 +102,10 @@ on Linux runners before invoking Cargo.
 
 ### CI and coverage
 
-Coverage generation is the intentional exception to Cranelift. CI measures Rust
-coverage with the shared `generate-coverage` action. Coverage runs use the LLVM
-backend instead of Cranelift because `cargo-llvm-cov` relies on LLVM coverage
-instrumentation.
+CI measures Rust coverage with the shared `generate-coverage` action. Coverage
+is a measurement, so it stays outside the build standard: the action assigns
+its own `RUSTFLAGS` without `-Zthreads=8` or `mold`, and `cargo-llvm-cov`
+relies on LLVM coverage instrumentation.
 
 Keep that LLVM instrumentation carve-out inside the shared coverage action. Do
 not add a workflow-level or step-level `CARGO_PROFILE_DEV_CODEGEN_BACKEND=llvm`
@@ -107,7 +115,7 @@ starts.
 Any change to `.cargo/config.toml`, `rust-toolchain.toml`, or the build-related
 GitHub Actions wiring must include script-test coverage that verifies the
 configuration contract. At minimum, tests should cover the selected codegen
-backend, the Cranelift component, the Linux linker settings, guarded CI
+absence of a codegen backend, the Linux linker settings, guarded CI
 installation of `clang` and `mold`, and the coverage action carve-out.
 
 ## Release workflow

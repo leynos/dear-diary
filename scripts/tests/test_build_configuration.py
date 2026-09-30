@@ -1,14 +1,15 @@
 """Tests for repository build and coverage configuration.
 
 These tests cover infrastructure files that affect Cargo code generation,
-linking, and CI coverage behaviour. They keep the Cranelift and mold setup
-from drifting silently because these files are not exercised by Rust unit
-tests directly.
+linking, and CI coverage behaviour. They keep the build standard (the parallel
+frontend and mold, with no codegen backend selected) from drifting silently
+because these files are not exercised by Rust unit tests directly.
 """
 
 from __future__ import annotations
 
 import re
+import subprocess
 import tomllib
 from pathlib import Path
 
@@ -22,7 +23,14 @@ README = PROJECT_ROOT / "README.md"
 RELEASE_WORKFLOW = PROJECT_ROOT / ".github" / "workflows" / "release.yml"
 RUST_TOOLCHAIN = PROJECT_ROOT / "rust-toolchain.toml"
 USER_GUIDE = PROJECT_ROOT / "docs" / "users-guide.md"
+MAKEFILE = PROJECT_ROOT / "Makefile"
 SHARED_ACTIONS_REVISION = "eff100c965da05e14fd4e07d7ea518408b312cb8"
+SETUP_RUST_REVISION = "8a83824b29dfe8f861714b544dc85fb925ed010c"
+THREADS_FLAG = "-Zthreads=8"
+MOLD_FLAG = "-Clink-arg=-fuse-ld=mold"
+HARDENED_CLANG_INSTALL_COMMAND = (
+    "apt-get update && sudo apt-get install --yes --no-install-recommends clang"
+)
 HARDENED_LINKER_INSTALL_COMMAND = (
     "apt-get update && sudo apt-get install --yes --no-install-recommends "
     "clang mold"
@@ -113,7 +121,7 @@ def load_toml(path: Path) -> dict[str, object]:
     Examples
     --------
     >>> load_toml(RUST_TOOLCHAIN)["toolchain"]["components"]
-    ['rustfmt', 'clippy', 'rustc-codegen-cranelift-preview']
+    ['rustfmt', 'clippy']
     """
     return tomllib.loads(load_text(path))
 
@@ -133,40 +141,92 @@ def test_load_toml_reports_invalid_toml(tmp_path: Path) -> None:
         load_toml(invalid_toml)
 
 
-def test_cargo_config_enables_cranelift_and_mold_linking() -> None:
-    """Verify the Cargo profile and Linux linker contract."""
+def test_cargo_config_carries_the_build_standard() -> None:
+    """Verify the Cargo configuration holds the frontend and linker flags."""
     cargo_config = load_toml(CARGO_CONFIG)
     linux_target = cargo_config["target"]["x86_64-unknown-linux-gnu"]
 
-    assert cargo_config["unstable"]["codegen-backend"] is True
-    assert cargo_config["profile"]["dev"]["codegen-backend"] == "cranelift"
+    assert cargo_config["build"]["rustflags"] == [THREADS_FLAG]
     assert linux_target["linker"] == "clang"
-    assert linux_target["rustflags"] == ["-C", "link-arg=-fuse-ld=mold"]
+    assert linux_target["rustflags"] == [THREADS_FLAG, MOLD_FLAG]
 
 
-def test_toolchain_installs_cranelift_component() -> None:
-    """Verify the pinned Rust toolchain includes Cranelift codegen."""
+def test_cargo_config_selects_no_codegen_backend() -> None:
+    """Refuse a codegen backend: Cranelift cannot link with `-Zthreads=8`."""
+    cargo_config = load_toml(CARGO_CONFIG)
+
+    assert "codegen-backend" not in cargo_config.get("unstable", {})
+    assert "codegen-backend" not in cargo_config.get("profile", {}).get("dev", {})
+
+
+def test_toolchain_carries_no_cranelift_component() -> None:
+    """Verify the pinned toolchain does not install the Cranelift backend."""
     toolchain = load_toml(RUST_TOOLCHAIN)["toolchain"]
 
     assert toolchain["channel"].startswith("nightly-")
-    assert "rustfmt" in toolchain["components"]
-    assert "clippy" in toolchain["components"]
-    assert "rustc-codegen-cranelift-preview" in toolchain["components"]
+    assert toolchain["components"] == ["rustfmt", "clippy"]
 
 
-def test_ci_installs_linker_tools_and_uses_coverage_carve_out() -> None:
-    """Verify CI installs linker tools and delegates coverage backend handling."""
+def make_commands(target: str, host_os: str) -> str:
+    """Return the commands `make -n` prints for a target on a given host OS."""
+    completed = subprocess.run(  # noqa: S603 - fixed argv; no shell.
+        ["make", "-n", "-s", target, f"BUILD_HOST_OS={host_os}"],
+        cwd=PROJECT_ROOT,
+        capture_output=True,
+        check=True,
+        text=True,
+    )
+    return completed.stdout
+
+
+@pytest.mark.parametrize("target", ["test", "lint"])
+def test_development_recipes_compose_the_standard_flags_on_linux(target: str) -> None:
+    """Verify Linux recipes assign both flags and keep the caller's RUSTFLAGS."""
+    commands = make_commands(target, "Linux")
+
+    assert f'RUSTFLAGS="${{RUSTFLAGS:+$RUSTFLAGS }}' in commands
+    assert f"{THREADS_FLAG} {MOLD_FLAG}" in commands
+    assert "-D warnings" in commands
+
+
+@pytest.mark.parametrize("target", ["test", "lint"])
+def test_development_recipes_leave_mold_to_linux(target: str) -> None:
+    """Verify a non-Linux host keeps its platform linker."""
+    commands = make_commands(target, "Darwin")
+
+    assert THREADS_FLAG in commands
+    assert MOLD_FLAG not in commands
+
+
+def test_release_build_assigns_an_empty_rustflags() -> None:
+    """Verify a release build takes neither flag, so it uses the stable linker."""
+    commands = make_commands("target/release/dear-diary", "Linux")
+
+    assert 'RUSTFLAGS="${RUSTFLAGS-}"' in commands
+    assert THREADS_FLAG not in commands
+    assert MOLD_FLAG not in commands
+
+
+def test_ci_installs_mold_through_setup_rust_and_carves_out_coverage() -> None:
+    """Verify CI installs mold via setup-rust and keeps coverage off the flags."""
     workflow = load_text(CI_WORKFLOW)
 
-    assert f"setup-rust@{SHARED_ACTIONS_REVISION}" in workflow
+    assert f"setup-rust@{SETUP_RUST_REVISION}" in workflow
     assert f"generate-coverage@{SHARED_ACTIONS_REVISION}" in workflow
     assert "run: make test-scripts" in workflow
-    linker_step = named_workflow_step(workflow, "Install mold linker")
+    setup_step = named_workflow_step(workflow, "Setup Rust")
+    assert "install-mold: 'true'" in setup_step
+    linker_step = named_workflow_step(workflow, "Install clang")
     assert "if: runner.os == 'Linux'" in linker_step
     assert "export DEBIAN_FRONTEND=noninteractive" in linker_step
-    assert HARDENED_LINKER_INSTALL_COMMAND in normalise_shell_continuations(
+    assert HARDENED_CLANG_INSTALL_COMMAND in normalise_shell_continuations(
         linker_step
     )
+    coverage_step = named_workflow_step(workflow, "Test and Measure Coverage")
+    assert "RUSTFLAGS: -D warnings\n" in coverage_step
+    assert THREADS_FLAG not in coverage_step
+    assert MOLD_FLAG not in coverage_step
+    assert "whitaker-installer --cranelift" not in workflow
     assert "CARGO_PROFILE_DEV_CODEGEN_BACKEND" not in workflow
 
 
@@ -197,8 +257,8 @@ def test_build_configuration_is_developer_documentation() -> None:
 
     assert "## Build configuration" in developer_docs
     assert "### CI and coverage" in developer_docs
-    assert "Cranelift code generation backend" in developer_docs
-    assert "Weaver and Gauss" in developer_docs
+    assert "### Cranelift exception" in developer_docs
+    assert "aws_lc_0_45_0_*" in developer_docs
     assert "`clang` with `mold`" in developer_docs
     assert "LLVM instrumentation carve-out" in developer_docs
     assert "shared `generate-coverage` action" in developer_docs

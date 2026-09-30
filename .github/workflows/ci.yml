@@ -17,14 +17,17 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - name: Setup Rust
-        uses: leynos/shared-actions/.github/actions/setup-rust@eff100c965da05e14fd4e07d7ea518408b312cb8
-      - name: Install mold linker
+        uses: leynos/shared-actions/.github/actions/setup-rust@8a83824b29dfe8f861714b544dc85fb925ed010c
+        with:
+          install-mold: 'true'
+      - name: Install clang
         if: runner.os == 'Linux'
         run: |
           set -euo pipefail
           export DEBIAN_FRONTEND=noninteractive
+          # setup-rust installs mold (install-mold above); clang drives the link.
           sudo apt-get update \
-            && sudo apt-get install --yes --no-install-recommends clang mold
+            && sudo apt-get install --yes --no-install-recommends clang
       - name: Install mdtablefix
         # `make check-fmt` runs `mdtablefix --check --git`; 0.6.0 is the
         # first release with `--check` and `--git`.
@@ -59,11 +62,14 @@ jobs:
               cargo install --locked whitaker-installer --version "${WHITAKER_INSTALLER_VERSION}"
             fi
           fi
-          whitaker-installer --cranelift
+          whitaker-installer
       - name: Lint
         run: make lint
       - name: Test and Measure Coverage
         uses: leynos/shared-actions/.github/actions/generate-coverage@eff100c965da05e14fd4e07d7ea518408b312cb8
+        env:
+          # A coverage build is a measurement: no -Zthreads and no mold.
+          RUSTFLAGS: -D warnings
         with:
           output-path: lcov.info
           format: lcov
