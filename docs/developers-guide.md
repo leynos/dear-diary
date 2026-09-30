@@ -34,7 +34,7 @@ and Gauss use it. It links this workspace only without the parallel frontend:
 under `-Zthreads=8` the link fails with undefined `aws_lc_0_45_0_*` symbols from
 `aws-lc-sys`. The build standard requires `-Zthreads=8`, and Cranelift is kept
 only where the full suite passes, so the backend is dropped rather than the
-frontend flag. The evidence, measured on the pinned Nightly on 2026-09-29 and
+frontend flag. The evidence, measured on `nightly-2025-12-10` on 2026-09-29 and
 kept with the pull request that adopted the standard:
 
 - Cranelift with `-Zthreads=8` fails to link, in two separate runs.

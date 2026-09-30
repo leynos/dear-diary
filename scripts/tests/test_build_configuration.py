@@ -264,7 +264,10 @@ def test_build_configuration_is_developer_documentation() -> None:
     assert "shared `generate-coverage` action" in developer_docs
     assert "LLVM coverage" in developer_docs
     assert "instrumentation" in developer_docs
-    assert re.search(r"nightly-\d{4}-\d{2}-\d{2}", developer_docs) is None
+    # The Cranelift exception must name the measurement's channel, which is the
+    # pinned one (concordat BD-006), so the guide carries no other nightly.
+    pinned = load_toml(RUST_TOOLCHAIN)["toolchain"]["channel"]
+    assert set(re.findall(r"nightly-\d{4}-\d{2}-\d{2}", developer_docs)) == {pinned}
     assert "## Core functionality" in readme
     assert "Toolchain prerequisites" not in readme
     assert "rustc-codegen-cranelift" not in readme
