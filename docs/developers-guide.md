@@ -77,6 +77,10 @@ own pinned `typos` binary, and applies the shared phrase corrections that
 drift-checked in continuous integration (CI); the tracked copy is only a record
 of the last generated policy.
 
+`TYPOS_CONFIG_BUILDER_VERSION` in the `Makefile` pins the
+`typos-config-builder` release the gate runs (currently `v0.1.3`). Raise it
+together with the regenerated `typos.toml`, never on its own.
+
 Add repository-only proper names or quoted upstream terms to
 `typos.local.toml`; never edit generated entries in `typos.toml` by hand.
 
