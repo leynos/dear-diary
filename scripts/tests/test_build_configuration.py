@@ -24,8 +24,8 @@ RELEASE_WORKFLOW = PROJECT_ROOT / ".github" / "workflows" / "release.yml"
 RUST_TOOLCHAIN = PROJECT_ROOT / "rust-toolchain.toml"
 USER_GUIDE = PROJECT_ROOT / "docs" / "users-guide.md"
 MAKEFILE = PROJECT_ROOT / "Makefile"
-SHARED_ACTIONS_REVISION = "eff100c965da05e14fd4e07d7ea518408b312cb8"
-SETUP_RUST_REVISION = "8a83824b29dfe8f861714b544dc85fb925ed010c"
+SHARED_ACTIONS_REVISION = "6cec89bac47a21cf756d68d638a9a510998e57f8"
+SETUP_RUST_REVISION = SHARED_ACTIONS_REVISION
 THREADS_FLAG = "-Zthreads=8"
 MOLD_FLAG = "-Clink-arg=-fuse-ld=mold"
 HARDENED_CLANG_INSTALL_COMMAND = (
@@ -170,7 +170,7 @@ def test_toolchain_carries_no_cranelift_component() -> None:
 def make_commands(target: str, host_os: str) -> str:
     """Return the commands `make -n` prints for a target on a given host OS."""
     completed = subprocess.run(  # noqa: S603 - fixed argv; no shell.
-        ["make", "-n", "-s", target, f"BUILD_HOST_OS={host_os}"],
+        ["make", "-n", "-s", "-B", target, f"BUILD_HOST_OS={host_os}"],
         cwd=PROJECT_ROOT,
         capture_output=True,
         check=True,
@@ -196,6 +196,16 @@ def test_development_recipes_leave_mold_to_linux(target: str) -> None:
 
     assert THREADS_FLAG in commands
     assert MOLD_FLAG not in commands
+
+
+def test_debug_build_composes_the_standard_flags() -> None:
+    """Verify the debug build rule restates both flags on Linux and not mold elsewhere."""
+    linux = make_commands("target/debug/dear-diary", "Linux")
+    darwin = make_commands("target/debug/dear-diary", "Darwin")
+
+    assert f"{THREADS_FLAG} {MOLD_FLAG}" in linux
+    assert THREADS_FLAG in darwin
+    assert MOLD_FLAG not in darwin
 
 
 def test_release_build_assigns_an_empty_rustflags() -> None:
@@ -226,7 +236,8 @@ def test_ci_installs_mold_through_setup_rust_and_carves_out_coverage() -> None:
     assert "RUSTFLAGS: -D warnings\n" in coverage_step
     assert THREADS_FLAG not in coverage_step
     assert MOLD_FLAG not in coverage_step
-    assert "whitaker-installer --cranelift" not in workflow
+    whitaker_step = named_workflow_step(workflow, "Install Whitaker")
+    assert "cranelift" not in whitaker_step, "Cranelift is dropped; Whitaker needs no --cranelift"
     assert "CARGO_PROFILE_DEV_CODEGEN_BACKEND" not in workflow
 
 
@@ -267,7 +278,9 @@ def test_build_configuration_is_developer_documentation() -> None:
     # The Cranelift exception must name the measurement's channel, which is the
     # pinned one (concordat BD-006), so the guide carries no other nightly.
     pinned = load_toml(RUST_TOOLCHAIN)["toolchain"]["channel"]
-    assert set(re.findall(r"nightly-\d{4}-\d{2}-\d{2}", developer_docs)) == {pinned}
+    assert set(re.findall(r"nightly-\d{4}-\d{2}-\d{2}", developer_docs)) == {pinned}, (
+        "the guide must name only the pinned nightly channel"
+    )
     assert "## Core functionality" in readme
     assert "Toolchain prerequisites" not in readme
     assert "rustc-codegen-cranelift" not in readme
