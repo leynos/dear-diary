@@ -57,3 +57,11 @@ The project could have suppressed the first findings and limited this change to
 tool installation. That would have enabled the command path, but it would have
 weakened the purpose of adding Whitaker. Fixing the interpolation and test
 hygiene findings makes the new lint contract active immediately.
+
+## Addendum: 2026-09-30
+
+The workspace no longer selects the Cranelift backend, so CI runs plain
+`whitaker-installer` before `make lint`. The `--cranelift` flag built the lint
+drivers for a Cranelift development profile that the repository has dropped;
+the reason is recorded under "Cranelift exception" in the developers' guide.
+The decision above is otherwise unchanged.

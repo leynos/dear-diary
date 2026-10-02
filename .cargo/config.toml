@@ -1,9 +1,29 @@
-[unstable]
-codegen-backend = true
+# Repository-wide Cargo defaults for the development build standard
+# (concordat rule `rust-build-defaults`).
+#
+# The parallel `rustc` frontend and, on Linux, the `mold` linker are the
+# defaults for every development, test, lint and typecheck build. Cargo
+# auto-discovers this file, so a bare `cargo build` gets them too.
+#
+# No codegen backend is selected here. Cranelift does not link this workspace
+# under `-Zthreads=8` (undefined `aws_lc_0_45_0_*` symbols from `aws-lc-sys`),
+# and the standard requires the frontend flag. See "Cranelift exception" in
+# docs/developers-guide.md; scripts/tests/test_build_configuration.py holds the
+# rule.
 
-[profile.dev]
-codegen-backend = "cranelift"
+# Cargo selects a single `rustflags` source rather than merging them: a
+# matching `[target.*]` table replaces `[build] rustflags` outright, and an
+# assigned `RUSTFLAGS` replaces both. Every flag is therefore repeated in each
+# source here, and the Makefile composes them into the `RUSTFLAGS` its
+# recipes set. Coverage and release builds assign `RUSTFLAGS` without them on
+# purpose: a measurement and a shipped artefact stay on the platform linker
+# and the single-threaded frontend.
+[build]
+rustflags = ["-Zthreads=8"]
 
+# mold ships for Linux only, so the linker flag lives in a Linux-only table,
+# with clang driving the link. Other targets, macOS and Windows included, fall
+# through to `[build] rustflags` above and keep their platform linker.
 [target.x86_64-unknown-linux-gnu]
 linker = "clang"
-rustflags = ["-C", "link-arg=-fuse-ld=mold"]
+rustflags = ["-Zthreads=8", "-Clink-arg=-fuse-ld=mold"]
