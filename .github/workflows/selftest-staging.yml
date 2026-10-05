@@ -38,7 +38,7 @@ jobs:
           chmod +x "${binary}"
       - name: Stage release artefacts
         id: stage
-        uses: leynos/shared-actions/.github/actions/stage-release-artefacts@6cec89bac47a21cf756d68d638a9a510998e57f8
+        uses: leynos/shared-actions/.github/actions/stage-release-artefacts@7d751eded578e48dacf43ab173d5820e6437c474
         with:
           config-file: .github/release-staging.toml
           target: linux-x86_64
