@@ -101,8 +101,13 @@ rustflags = ["-Zthreads=8", "-Clink-arg=-fuse-ld=mold"]
 ```
 
 Install `clang` and `mold` before running local Linux builds that use that host
-target. In GitHub Actions, the CI and release workflows install both packages
-on Linux runners before invoking Cargo.
+target. In GitHub Actions, the CI and release workflows install them through the
+`setup-rust` action's `install-mold` and `install-clang-lld` inputs, which
+install the packages on Linux, fail the job unless `clang`, `ld.lld` and `mold`
+resolve on `PATH`, and skip with a notice elsewhere. No workflow carries a
+hand-rolled `apt-get` step, and the inputs set no linker flag, so
+`.cargo/config.toml` still chooses the linker. `lld` is newly installed here;
+nothing selects it.
 
 ### CI and coverage
 
@@ -120,7 +125,8 @@ Any change to `.cargo/config.toml`, `rust-toolchain.toml`, or the build-related
 GitHub Actions wiring must include script-test coverage that verifies the
 configuration contract. At minimum, tests should cover the selected codegen
 absence of a codegen backend, the Linux linker settings, guarded CI
-installation of `clang` and `mold`, and the coverage action carve-out.
+installation of the linkers through `setup-rust`, and the coverage action
+carve-out.
 
 ## Release workflow
 

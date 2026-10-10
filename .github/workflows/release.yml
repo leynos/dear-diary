@@ -49,16 +49,11 @@ jobs:
           "${{ steps.setup-python.outputs.python-path }}" --version
           uv run scripts/release_support.py verify-version
       - name: Setup Rust
-        uses: leynos/shared-actions/.github/actions/setup-rust@6cec89bac47a21cf756d68d638a9a510998e57f8
+        uses: leynos/shared-actions/.github/actions/setup-rust@b804b69fa7f978cf9091b9d9bd5481d8ce58c2ea
         with:
           expect-cache: any
-      - name: Install mold linker
-        if: runner.os == 'Linux'
-        run: |
-          set -euo pipefail
-          export DEBIAN_FRONTEND=noninteractive
-          sudo apt-get update \
-            && sudo apt-get install --yes --no-install-recommends clang mold
+          install-mold: 'true'
+          install-clang-lld: 'true'
       - name: Cache cross binary
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
