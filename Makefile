@@ -23,7 +23,7 @@ MDTABLEFIX ?= mdtablefix
 MDTABLEFIX_SELECT = --git --include-untracked
 MDTABLEFIX_RULES = --wrap --renumber --breaks --ellipsis --fences
 NIXIE ?= nixie
-PYTEST ?= uv run --with pytest --with cyclopts --with syrupy --with pyyaml python -m pytest
+PYTEST ?= uv run --with pytest --with cyclopts --with syrupy --with pyyaml==6.0.3 python -m pytest
 WHITAKER ?= $(or $(shell command -v whitaker 2>/dev/null),$(wildcard $(USER_WHITAKER)),whitaker)
 TYPOS_CONFIG_BUILDER_VERSION ?= v0.1.3
 TYPOS_CONFIG_BUILDER = uv tool run --python 3.14 --from \
