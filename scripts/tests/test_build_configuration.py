@@ -14,6 +14,7 @@ import tomllib
 from pathlib import Path
 
 import pytest
+import yaml
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 CARGO_CONFIG = PROJECT_ROOT / ".cargo" / "config.toml"
@@ -25,16 +26,9 @@ RUST_TOOLCHAIN = PROJECT_ROOT / "rust-toolchain.toml"
 USER_GUIDE = PROJECT_ROOT / "docs" / "users-guide.md"
 MAKEFILE = PROJECT_ROOT / "Makefile"
 SHARED_ACTIONS_REVISION = "6cec89bac47a21cf756d68d638a9a510998e57f8"
-SETUP_RUST_REVISION = SHARED_ACTIONS_REVISION
+SETUP_RUST_REVISION = "b804b69fa7f978cf9091b9d9bd5481d8ce58c2ea"
 THREADS_FLAG = "-Zthreads=8"
 MOLD_FLAG = "-Clink-arg=-fuse-ld=mold"
-HARDENED_CLANG_INSTALL_COMMAND = (
-    "apt-get update && sudo apt-get install --yes --no-install-recommends clang"
-)
-HARDENED_LINKER_INSTALL_COMMAND = (
-    "apt-get update && sudo apt-get install --yes --no-install-recommends "
-    "clang mold"
-)
 
 
 def named_workflow_step(workflow: str, name: str) -> str:
@@ -52,6 +46,69 @@ def named_workflow_step(workflow: str, name: str) -> str:
     matches = pattern.findall(workflow)
     assert len(matches) == 1
     return matches[0]
+
+
+SETUP_RUST_PREFIX = "leynos/shared-actions/.github/actions/setup-rust@"
+LINKER_INPUTS = ("install-mold", "install-clang-lld")
+LINKER_PACKAGES = ("clang", "lld", "mold")
+
+
+def workflow_steps(workflow: str) -> list[dict[str, object]]:
+    """Return every step of every job in a workflow, parsed as YAML.
+
+    Raises
+    ------
+    AssertionError
+        If the workflow has no jobs mapping.
+    """
+    jobs = yaml.safe_load(workflow).get("jobs")
+    assert isinstance(jobs, dict), "workflow must declare jobs"
+    return [
+        step
+        for job in jobs.values()
+        for step in job.get("steps", [])
+        if isinstance(step, dict)
+    ]
+
+
+def is_hand_installed_linker(script: str) -> bool:
+    """Return whether a shell script apt-installs clang, lld or mold by hand."""
+    for command in re.sub(r"\\\n\s*", " ", script).splitlines():
+        words = re.split(r"[^A-Za-z0-9-]+", command)
+        if command.lstrip().startswith("#"):
+            continue
+        apt = "apt" in words or "apt-get" in words
+        if apt and "install" in words and set(words) & set(LINKER_PACKAGES):
+            return True
+    return False
+
+
+def assert_linkers_come_from_setup_rust(workflow: str) -> None:
+    """Assert every `setup-rust` step installs the linkers, and none by hand.
+
+    Raises
+    ------
+    AssertionError
+        If no step pins `setup-rust`, a pinned step lacks an input or sets it to
+        anything but the string `'true'`, an unpinned `setup-rust` reference
+        exists, or a step apt-installs a linker.
+    """
+    steps = workflow_steps(workflow)
+    named = [s for s in steps if str(s.get("uses", "")).startswith(SETUP_RUST_PREFIX)]
+    pinned = [
+        s
+        for s in named
+        if re.fullmatch(r"[0-9a-f]{40}", str(s["uses"])[len(SETUP_RUST_PREFIX) :])
+    ]
+    assert pinned, "setup-rust must be pinned to a full commit SHA"
+    assert len(named) == len(pinned), "every setup-rust reference must be pinned"
+    for step in pinned:
+        inputs = step.get("with") or {}
+        for name in LINKER_INPUTS:
+            assert inputs.get(name) == "true", f"setup-rust must set {name}: 'true'"
+    assert not [s for s in steps if is_hand_installed_linker(str(s.get("run", "")))], (
+        "no step may apt-install a linker beside setup-rust"
+    )
 
 
 def normalise_shell_continuations(script: str) -> str:
@@ -224,14 +281,7 @@ def test_ci_installs_mold_through_setup_rust_and_carves_out_coverage() -> None:
     assert f"setup-rust@{SETUP_RUST_REVISION}" in workflow
     assert f"generate-coverage@{SHARED_ACTIONS_REVISION}" in workflow
     assert "run: make test-scripts" in workflow
-    setup_step = named_workflow_step(workflow, "Setup Rust")
-    assert "install-mold: 'true'" in setup_step
-    linker_step = named_workflow_step(workflow, "Install clang")
-    assert "if: runner.os == 'Linux'" in linker_step
-    assert "export DEBIAN_FRONTEND=noninteractive" in linker_step
-    assert HARDENED_CLANG_INSTALL_COMMAND in normalise_shell_continuations(
-        linker_step
-    )
+    assert_linkers_come_from_setup_rust(workflow)
     coverage_step = named_workflow_step(workflow, "Test and Measure Coverage")
     assert "RUSTFLAGS: -D warnings\n" in coverage_step
     assert THREADS_FLAG not in coverage_step
@@ -241,20 +291,15 @@ def test_ci_installs_mold_through_setup_rust_and_carves_out_coverage() -> None:
     assert "CARGO_PROFILE_DEV_CODEGEN_BACKEND" not in workflow
 
 
-def test_release_workflow_installs_linker_tools() -> None:
+def test_release_workflow_installs_linker_tools_through_setup_rust() -> None:
     """Verify release builds have the Linux linker prerequisites available."""
     workflow = load_text(RELEASE_WORKFLOW)
 
-    assert f"setup-rust@{SHARED_ACTIONS_REVISION}" in workflow
+    assert f"setup-rust@{SETUP_RUST_REVISION}" in workflow
     assert f"stage-release-artefacts@{SHARED_ACTIONS_REVISION}" in workflow
     assert f"cargo_{'bin' 'stall'}_archive" not in workflow
-    linker_step = named_workflow_step(workflow, "Install mold linker")
+    assert_linkers_come_from_setup_rust(workflow)
     staging_step = named_workflow_step(workflow, "Stage release artefacts")
-    assert "if: runner.os == 'Linux'" in linker_step
-    assert "export DEBIAN_FRONTEND=noninteractive" in linker_step
-    assert HARDENED_LINKER_INSTALL_COMMAND in normalise_shell_continuations(
-        linker_step
-    )
     assert "config-file: .github/release-staging.toml" in staging_step
     assert "target: ${{ matrix.key }}" in staging_step
     assert "path: ${{ steps.stage.outputs.artifact-dir }}" in workflow
@@ -285,3 +330,90 @@ def test_build_configuration_is_developer_documentation() -> None:
     assert "Toolchain prerequisites" not in readme
     assert "rustc-codegen-cranelift" not in readme
     assert "CI and coverage" not in load_text(USER_GUIDE)
+
+
+SETUP_RUST_USES = (
+    "        uses: leynos/shared-actions/.github/actions/setup-rust@"
+    "0123456789abcdef0123456789abcdef01234567\n"
+)
+BOTH_INPUTS = "        with:\n          install-mold: 'true'\n          install-clang-lld: 'true'\n"
+
+
+def linker_workflow(inputs: str, extra_steps: str = "") -> str:
+    """Return a one-job workflow: a pinned setup-rust step, then extra steps."""
+    return (
+        "jobs:\n  build-test:\n    steps:\n      - name: Setup Rust\n"
+        f"{SETUP_RUST_USES}{inputs}{extra_steps}"
+    )
+
+
+def test_linker_helper_accepts_both_inputs() -> None:
+    """A pinned step with both inputs and no hand install passes."""
+    assert_linkers_come_from_setup_rust(linker_workflow(BOTH_INPUTS))
+
+
+@pytest.mark.parametrize(
+    "inputs",
+    [
+        pytest.param("", id="no-with-block"),
+        pytest.param("        with:\n          install-mold: 'true'\n", id="no-clang-lld"),
+        pytest.param(
+            "        with:\n          install-clang-lld: 'true'\n", id="no-mold"
+        ),
+        pytest.param(
+            "        with:\n          install-mold: 'false'\n"
+            "          install-clang-lld: 'true'\n",
+            id="false-value",
+        ),
+    ],
+)
+def test_linker_helper_rejects_a_missing_or_false_input(inputs: str) -> None:
+    """A missing or false input fails the assertion."""
+    with pytest.raises(AssertionError):
+        assert_linkers_come_from_setup_rust(linker_workflow(inputs))
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "sudo apt-get install --yes clang lld",
+        "sudo apt install --yes clang lld",
+        "sudo apt-get install --yes \\\n            clang mold",
+    ],
+)
+def test_linker_helper_rejects_a_hand_rolled_install(command: str) -> None:
+    """An apt step installing a linker fails even beside the inputs."""
+    step = f"      - name: Install\n        run: |\n          {command}\n"
+
+    with pytest.raises(AssertionError):
+        assert_linkers_come_from_setup_rust(linker_workflow(BOTH_INPUTS, step))
+
+
+def test_linker_helper_rejects_inputs_under_env() -> None:
+    """Inputs outside `with:` are not action inputs."""
+    env_block = "        env:\n          install-mold: 'true'\n          install-clang-lld: 'true'\n"
+
+    with pytest.raises(AssertionError):
+        assert_linkers_come_from_setup_rust(linker_workflow(env_block))
+
+
+def test_linker_helper_rejects_an_unpinned_reference_beside_a_pinned_one() -> None:
+    """A second, unpinned setup-rust reference cannot hide beside a pinned one."""
+    unpinned = (
+        "      - name: Other\n        uses: "
+        "leynos/shared-actions/.github/actions/setup-rust@main\n"
+    )
+
+    with pytest.raises(AssertionError):
+        assert_linkers_come_from_setup_rust(linker_workflow(BOTH_INPUTS, unpinned))
+
+
+def test_linker_helper_rejects_a_folded_scalar_install() -> None:
+    """A folded scalar installing a linker is read as one command."""
+    folded = (
+        "      - name: Install\n        run: >-\n          sudo apt-get install --yes\n"
+        "          clang lld\n"
+    )
+
+    with pytest.raises(AssertionError):
+        assert_linkers_come_from_setup_rust(linker_workflow(BOTH_INPUTS, folded))
