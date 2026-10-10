@@ -14,6 +14,7 @@ import tomllib
 from pathlib import Path
 
 import pytest
+import yaml
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 CARGO_CONFIG = PROJECT_ROOT / ".cargo" / "config.toml"
@@ -47,33 +48,67 @@ def named_workflow_step(workflow: str, name: str) -> str:
     return matches[0]
 
 
-def setup_rust_inputs(workflow: str) -> str:
-    """Return the lines of the `setup-rust` step that follow its `uses:` line.
+SETUP_RUST_PREFIX = "leynos/shared-actions/.github/actions/setup-rust@"
+LINKER_INPUTS = ("install-mold", "install-clang-lld")
+LINKER_PACKAGES = ("clang", "lld", "mold")
+
+
+def workflow_steps(workflow: str) -> list[dict[str, object]]:
+    """Return every step of every job in a workflow, parsed as YAML.
 
     Raises
     ------
     AssertionError
-        If the workflow does not pin `setup-rust` to a full commit SHA.
+        If the workflow has no jobs mapping.
     """
-    pattern = re.compile(
-        r"(?ms)^ +uses: leynos/shared-actions/\.github/actions/setup-rust@[0-9a-f]{40}\n"
-        r"(.*?)(?=^      - |^    [A-Za-z_-]+:|\Z)"
-    )
-    matches = pattern.findall(workflow)
-    assert matches, "setup-rust must be pinned to a full commit SHA"
-    return "\n".join(matches)
+    jobs = yaml.safe_load(workflow).get("jobs")
+    assert isinstance(jobs, dict), "workflow must declare jobs"
+    return [
+        step
+        for job in jobs.values()
+        for step in job.get("steps", [])
+        if isinstance(step, dict)
+    ]
+
+
+def is_hand_installed_linker(script: str) -> bool:
+    """Return whether a shell script apt-installs clang, lld or mold by hand."""
+    for command in re.sub(r"\\\n\s*", " ", script).splitlines():
+        words = re.split(r"[^A-Za-z0-9-]+", command)
+        if command.lstrip().startswith("#"):
+            continue
+        apt = "apt" in words or "apt-get" in words
+        if apt and "install" in words and set(words) & set(LINKER_PACKAGES):
+            return True
+    return False
 
 
 def assert_linkers_come_from_setup_rust(workflow: str) -> None:
-    """Assert `setup-rust` installs the linkers and no step installs them by hand."""
-    inputs = setup_rust_inputs(workflow)
+    """Assert every `setup-rust` step installs the linkers, and none by hand.
 
-    assert "install-mold: 'true'" in inputs
-    assert "install-clang-lld: 'true'" in inputs
-    assert not re.search(
-        r"apt(-get)?\s+install[^\n]*\b(clang|lld|mold)\b",
-        re.sub(r"\\\n\s*", " ", workflow),
-    ), "no step may apt-install a linker beside setup-rust"
+    Raises
+    ------
+    AssertionError
+        If no step pins `setup-rust`, a pinned step lacks an input or sets it to
+        anything but the string `'true'`, an unpinned `setup-rust` reference
+        exists, or a step apt-installs a linker.
+    """
+    steps = workflow_steps(workflow)
+    named = [s for s in steps if str(s.get("uses", "")).startswith(SETUP_RUST_PREFIX)]
+    pinned = [
+        s
+        for s in named
+        if re.fullmatch(r"[0-9a-f]{40}", str(s["uses"])[len(SETUP_RUST_PREFIX) :])
+    ]
+    assert pinned, "setup-rust must be pinned to a full commit SHA"
+    assert len(named) == len(pinned), "every setup-rust reference must be pinned"
+    for step in pinned:
+        inputs = step.get("with") or {}
+        for name in LINKER_INPUTS:
+            assert inputs.get(name) == "true", f"setup-rust must set {name}: 'true'"
+    assert not [s for s in steps if is_hand_installed_linker(str(s.get("run", "")))], (
+        "no step may apt-install a linker beside setup-rust"
+    )
 
 
 def normalise_shell_continuations(script: str) -> str:
@@ -352,3 +387,33 @@ def test_linker_helper_rejects_a_hand_rolled_install(command: str) -> None:
 
     with pytest.raises(AssertionError):
         assert_linkers_come_from_setup_rust(linker_workflow(BOTH_INPUTS, step))
+
+
+def test_linker_helper_rejects_inputs_under_env() -> None:
+    """Inputs outside `with:` are not action inputs."""
+    env_block = "        env:\n          install-mold: 'true'\n          install-clang-lld: 'true'\n"
+
+    with pytest.raises(AssertionError):
+        assert_linkers_come_from_setup_rust(linker_workflow(env_block))
+
+
+def test_linker_helper_rejects_an_unpinned_reference_beside_a_pinned_one() -> None:
+    """A second, unpinned setup-rust reference cannot hide beside a pinned one."""
+    unpinned = (
+        "      - name: Other\n        uses: "
+        "leynos/shared-actions/.github/actions/setup-rust@main\n"
+    )
+
+    with pytest.raises(AssertionError):
+        assert_linkers_come_from_setup_rust(linker_workflow(BOTH_INPUTS, unpinned))
+
+
+def test_linker_helper_rejects_a_folded_scalar_install() -> None:
+    """A folded scalar installing a linker is read as one command."""
+    folded = (
+        "      - name: Install\n        run: >-\n          sudo apt-get install --yes\n"
+        "          clang lld\n"
+    )
+
+    with pytest.raises(AssertionError):
+        assert_linkers_come_from_setup_rust(linker_workflow(BOTH_INPUTS, folded))
