@@ -45,11 +45,15 @@ kept with the pull request that adopted the standard:
 the Cranelift component returns to the configuration. Revisit the exception when
 `aws-lc-sys` links under Cranelift with the parallel frontend.
 
-`make lint` runs Rustdoc, Clippy, and Whitaker. Install Whitaker through the
-versioned installer from crates.io before running the full lint target locally
-(CI pins the same installer version through the `WHITAKER_INSTALLER_VERSION`
-environment variable in `.github/workflows/ci.yml`; the suite itself follows
-the rolling Whitaker release):
+`make lint` first runs `make interrogate`, the Python docstring gate: it needs
+`uv`, runs interrogate 1.7.0 at `--fail-under 100` with `-vv` over
+`_act_support.py`, `conftest.py`, `scripts` and `tests`, and fails on any
+`MISSED` row because interrogate rounds its percentage to one decimal. It then
+runs Rustdoc, Clippy, and Whitaker. Install Whitaker through the versioned
+installer from crates.io before running the full lint target locally (CI pins
+the same installer version through the `WHITAKER_INSTALLER_VERSION` environment
+variable in `.github/workflows/ci.yml`; the suite itself follows the rolling
+Whitaker release):
 
 ```bash
 cargo install --locked whitaker-installer --version 0.2.6
