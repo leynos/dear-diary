@@ -49,7 +49,7 @@ jobs:
           "${{ steps.setup-python.outputs.python-path }}" --version
           uv run scripts/release_support.py verify-version
       - name: Setup Rust
-        uses: leynos/shared-actions/.github/actions/setup-rust@b804b69fa7f978cf9091b9d9bd5481d8ce58c2ea
+        uses: leynos/shared-actions/.github/actions/setup-rust@cabf105ae230e3759cf77b1c2d1d73ea0b67e9a9
         with:
           expect-cache: any
           install-mold: 'true'
@@ -82,7 +82,7 @@ jobs:
           echo "metric=release_build_complete target=${{ matrix.target }} os=${{ matrix.os }} arch=${{ matrix.arch }}"
       - name: Stage release artefacts
         id: stage
-        uses: leynos/shared-actions/.github/actions/stage-release-artefacts@6cec89bac47a21cf756d68d638a9a510998e57f8
+        uses: leynos/shared-actions/.github/actions/stage-release-artefacts@cabf105ae230e3759cf77b1c2d1d73ea0b67e9a9
         with:
           config-file: .github/release-staging.toml
           target: ${{ matrix.key }}
