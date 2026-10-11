@@ -15,6 +15,8 @@ jobs:
       BUILD_PROFILE: debug
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
       - name: Setup Rust
         uses: leynos/shared-actions/.github/actions/setup-rust@b804b69fa7f978cf9091b9d9bd5481d8ce58c2ea
         with:
@@ -42,20 +44,19 @@ jobs:
         uses: leynos/shared-actions/.github/actions/install-whitaker@7d751eded578e48dacf43ab173d5820e6437c474
       - name: Lint
         run: make lint
+      - name: Workflow contract tests
+        run: make test-workflow-contracts
       - name: Test and Measure Coverage
-        uses: leynos/shared-actions/.github/actions/generate-coverage@6cec89bac47a21cf756d68d638a9a510998e57f8
+        uses: leynos/shared-actions/.github/actions/generate-coverage@cabf105ae230e3759cf77b1c2d1d73ea0b67e9a9
         env:
           # A coverage build is a measurement: no -Zthreads and no mold.
           RUSTFLAGS: -D warnings
         with:
           output-path: lcov.info
           format: lcov
-      - name: Upload coverage data to CodeScene
-        env:
-          CS_ACCESS_TOKEN: ${{ secrets.CS_ACCESS_TOKEN }}
-        if: ${{ env.CS_ACCESS_TOKEN }}
-        uses: leynos/shared-actions/.github/actions/upload-codescene-coverage@7d751eded578e48dacf43ab173d5820e6437c474
-        with:
-          format: lcov
-          access-token: ${{ env.CS_ACCESS_TOKEN }}
-          installer-checksum: ${{ vars.CODESCENE_CLI_SHA256 }}
+          # The pull request measures coverage for its own ratchet check and
+          # nothing else: it neither publishes the report nor contacts
+          # CodeScene. Main owns both, in coverage-main.yml, and
+          # `make test-workflow-contracts` holds the split.
+          with-ratchet: 'true'
+          publish-artefact: 'false'

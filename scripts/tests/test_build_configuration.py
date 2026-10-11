@@ -27,6 +27,9 @@ USER_GUIDE = PROJECT_ROOT / "docs" / "users-guide.md"
 MAKEFILE = PROJECT_ROOT / "Makefile"
 SHARED_ACTIONS_REVISION = "6cec89bac47a21cf756d68d638a9a510998e57f8"
 SETUP_RUST_REVISION = "b804b69fa7f978cf9091b9d9bd5481d8ce58c2ea"
+# The coverage action moved to the commit that records a missing CodeScene token
+# (shared-actions #614) when coverage publication moved to main.
+COVERAGE_REVISION = "cabf105ae230e3759cf77b1c2d1d73ea0b67e9a9"
 THREADS_FLAG = "-Zthreads=8"
 MOLD_FLAG = "-Clink-arg=-fuse-ld=mold"
 
@@ -279,7 +282,7 @@ def test_ci_installs_mold_through_setup_rust_and_carves_out_coverage() -> None:
     workflow = load_text(CI_WORKFLOW)
 
     assert f"setup-rust@{SETUP_RUST_REVISION}" in workflow
-    assert f"generate-coverage@{SHARED_ACTIONS_REVISION}" in workflow
+    assert f"generate-coverage@{COVERAGE_REVISION}" in workflow
     assert "run: make test-scripts" in workflow
     assert_linkers_come_from_setup_rust(workflow)
     coverage_step = named_workflow_step(workflow, "Test and Measure Coverage")
