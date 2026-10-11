@@ -21,8 +21,9 @@ startup configuration behaviour difficult to review.
 ## Decision
 
 The project adopts Whitaker as part of the local and CI lint contract. The
-`make lint` target runs Rustdoc, Clippy, and Whitaker. Continuous Integration
-(CI) installs the versioned `whitaker-installer` release from crates.io and runs
+`make lint` target runs Rustdoc, Clippy, and Whitaker (after the `interrogate`
+Python docstring gate, which needs `uv`). Continuous Integration (CI) installs
+the versioned `whitaker-installer` release from crates.io and runs
 `whitaker-installer --cranelift` immediately before `make lint`, matching the
 same contract contributors run locally. The suite itself follows the rolling
 Whitaker release.

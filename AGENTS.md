@@ -134,7 +134,12 @@ project:
     ```
 
     linting every target with all features enabled and denying all Clippy
-    warnings.
+    warnings. It first runs the `interrogate` target, which requires a
+    docstring on every Python definition in `_act_support.py`, `conftest.py`,
+    `scripts` and `tests` and fails on any `MISSED` row, because interrogate
+    rounds its percentage to one decimal. Add a new Python directory to
+    `INTERROGATE_TARGETS` in the `Makefile`;
+    `tests/workflow_contracts/interrogate_gate_test.py` asserts the wiring.
   - `make test` executes:
 
     ```sh
