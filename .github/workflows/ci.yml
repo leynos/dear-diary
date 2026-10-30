@@ -41,7 +41,7 @@ jobs:
       - name: Script tests
         run: make test-scripts
       - name: Install Whitaker
-        uses: leynos/shared-actions/.github/actions/install-whitaker@7d751eded578e48dacf43ab173d5820e6437c474
+        uses: leynos/shared-actions/.github/actions/install-whitaker@5a99aed78ce68dcebd3052b75c31e6f173162b1e
       - name: Lint
         run: make lint
       - name: Workflow contract tests
