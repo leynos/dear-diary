@@ -266,6 +266,10 @@ impl<C: QdrantConnector + 'static> DiaryServer<C> {
     }
 }
 
+#[expect(
+    clippy::unused_async_trait_impl,
+    reason = "rmcp's tool_handler generates async trait methods that never await"
+)]
 #[tool_handler]
 impl<C: QdrantConnector + 'static> ServerHandler for DiaryServer<C> {
     fn get_info(&self) -> ServerInfo {

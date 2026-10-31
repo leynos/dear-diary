@@ -34,8 +34,9 @@ and Gauss use it. It links this workspace only without the parallel frontend:
 under `-Zthreads=8` the link fails with undefined `aws_lc_0_45_0_*` symbols from
 `aws-lc-sys`. The build standard requires `-Zthreads=8`, and Cranelift is kept
 only where the full suite passes, so the backend is dropped rather than the
-frontend flag. The evidence, measured on `nightly-2025-12-10` on 2026-09-29 and
-kept with the pull request that adopted the standard:
+frontend flag. The pin is now `nightly-2026-10-30` and no measurement has been
+taken on it. The evidence below was measured on 2026-09-29, on the nightly
+pinned then, and kept with the pull request that adopted the standard:
 
 - Cranelift with `-Zthreads=8` fails to link, in two separate runs.
 - Cranelift alone links.
@@ -44,6 +45,19 @@ kept with the pull request that adopted the standard:
 `scripts/tests/test_build_configuration.py` fails if a `codegen-backend` key or
 the Cranelift component returns to the configuration. Revisit the exception when
 `aws-lc-sys` links under Cranelift with the parallel frontend.
+
+### Development build footprint
+
+The development profile sets `incremental = false` and `debug = 0` in the root
+`Cargo.toml`, so a dev build keeps no incremental state or debug information.
+To debug, set `CARGO_PROFILE_DEV_DEBUG=true`; to rebuild incrementally, set
+`CARGO_INCREMENTAL=1` (unset any `sccache` wrapper first, which refuses
+incremental builds). `.cargo/config.toml` also sets
+`[unstable] embed-metadata = false`, the native Cargo key for nightlies from
+2026-07-31, so Cargo coordinates metadata output itself. No raw rustc metadata
+flags are used, and the pin is not moved to suit the key.
+`scripts/tests/test_build_configuration.py` holds all three settings and proves
+them, with both overrides, at the Cargo boundary.
 
 `make lint` first runs `make interrogate`, the Python docstring gate: it needs
 `uv`, runs interrogate 1.7.0 at `--fail-under 100` with `-vv` over
