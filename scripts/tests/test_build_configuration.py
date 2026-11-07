@@ -324,8 +324,9 @@ def test_build_configuration_is_developer_documentation() -> None:
     assert "shared `generate-coverage` action" in developer_docs
     assert "LLVM coverage" in developer_docs
     assert "instrumentation" in developer_docs
-    # Dependabot moves the pin daily, so the guide must point at the toolchain
+    # Dependabot checks the pin daily, so the guide must point at the toolchain
     # file rather than repeat a dated nightly that would go stale.
+    assert "`rust-toolchain.toml`" in developer_docs
     assert not re.findall(r"nightly-\d{4}-\d{2}-\d{2}", developer_docs), (
         "the guide must not name a dated nightly channel"
     )
