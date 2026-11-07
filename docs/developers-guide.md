@@ -35,10 +35,12 @@ under `-Zthreads=8` the link fails with undefined `aws_lc_0_45_0_*` symbols from
 `aws-lc-sys`. The build standard requires `-Zthreads=8`, and Cranelift is kept
 only where the full suite passes, so the backend is dropped rather than the
 frontend flag. The pin lives in `rust-toolchain.toml`, which Dependabot checks
-daily and may open a pull request for a newer nightly, and no measurement has
-been taken on the current one. The evidence below was measured on 2026-09-29,
-on the nightly pinned then, and kept with the pull request that adopted the
-standard:
+daily and may open a pull request for a newer nightly. The link failure was
+re-measured on 2026-11-07 on `nightly-2026-11-06`: `cargo test --no-run` under
+Cranelift with `-Zthreads=8` and mold still stops on undefined
+`aws_lc_0_45_0_*` symbols. The fuller evidence below was measured on
+2026-09-29, on the nightly pinned then, and kept with the pull request that
+adopted the standard:
 
 - Cranelift with `-Zthreads=8` fails to link, in two separate runs.
 - Cranelift alone links.
