@@ -4,7 +4,7 @@
 # refined `impl Trait` capture rules, and stricter unsafe checks. Once Edition
 # 2024 lands in stable Rust, this toolchain should be switched back to the
 # stable channel.
-channel = "nightly-2026-11-06"
+channel = "nightly-2026-11-09"
 components = [
     "rustfmt",
     "clippy",
