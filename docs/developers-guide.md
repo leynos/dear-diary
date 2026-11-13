@@ -93,7 +93,7 @@ testable without allowing startup parsing logic to grow into a single
 multi-purpose function.
 
 The architectural decision is recorded in
-[`docs/adr-001-whitaker-lint-contract.md`](adr-001-whitaker-lint-contract.md).
+[`docs/adrs/adr-0001-whitaker-lint-contract.md`](adrs/adr-0001-whitaker-lint-contract.md).
 
 ### Spelling policy
 
