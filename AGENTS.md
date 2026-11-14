@@ -372,9 +372,10 @@ project:
   tests that run many cases within one process, and leaves the ambient
   dependency embedded in the production signature. Where injection looks
   impossible the signature is wrong; correct the signature. The configuration
-  tests in `crates/dear-diary-config/src/settings_tests.rs` use a module-local
-  `ENV_MUTEX` guard as the accepted local form for in-process settings
-  variables.
+  tests in `crates/dear-diary-config/src/settings_tests.rs` are an existing
+  exception to this rule: they change in-process settings variables under a
+  module-local `ENV_MUTEX` guard, which is the accepted local form for those
+  tests.
 - **Subprocess isolation is the sole exemption.** End-to-end behavioural tests
   invoking the generated application binary through `assert_cmd` may configure
   the environment via `Command::env`/`Command::env_clear`, because the mutation
