@@ -167,11 +167,12 @@ there for its default, its override and, for a parsed value, its invalid form.
 
 The production path through the real process environment is covered at the
 binary boundary: `crates/dear-diary/tests/config_environment_tests.rs` runs the
-generated `dear-diary` binary with a child environment (`Command::env` and
-`env_remove`, which change nothing in the test process) and checks the
-configuration errors it reports, including a non-Unicode value reading as
-absent. Each case stops at the configuration step, so none needs a Qdrant
-server.
+generated `dear-diary` binary through `assert_cmd` with a child environment
+(`env` and `env_remove`, which change nothing in the test process, and
+`GIT_CEILING_DIRECTORIES` so interpolation sees only a bare directory) and
+checks the configuration errors it reports, including a non-Unicode value
+reading as absent. Each case stops at the configuration step, so none needs a
+Qdrant server.
 
 ## Release workflow
 

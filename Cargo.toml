@@ -58,11 +58,13 @@ async-trait = "0.1"
 uuid = { version = "1.21", features = ["v4"] }
 
 # Testing
+assert_cmd = "2.1"
 dotenvy = "0.15"
 insta = { version = "1.46", features = ["json", "redactions"] }
 mockall = "0.15"
 rstest = "0.28"
 rstest-bdd = "0.6"
+tempfile = "3.24"
 
 [workspace.lints.clippy]
 pedantic = { level = "warn", priority = -1 }
