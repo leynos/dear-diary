@@ -165,6 +165,14 @@ process environment and the cases run concurrently
 cannot mutate the process instead. A new configuration variable gets a case
 there for its default, its override and, for a parsed value, its invalid form.
 
+The production path through the real process environment is covered at the
+binary boundary: `crates/dear-diary/tests/config_environment_tests.rs` runs the
+generated `dear-diary` binary with a child environment (`Command::env` and
+`env_remove`, which change nothing in the test process) and checks the
+configuration errors it reports, including a non-Unicode value reading as
+absent. Each case stops at the configuration step, so none needs a Qdrant
+server.
+
 ## Release workflow
 
 The release workflow is defined in `.github/workflows/release.yml`. It runs
