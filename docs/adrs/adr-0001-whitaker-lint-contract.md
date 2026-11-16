@@ -45,8 +45,10 @@ panicking or hiding fallibility.
   helper can fail, it should return `Result` or keep the failure inside the
   test body.
 - Configuration-loading tests should cover both isolated interpolation helpers
-  and the `Settings::from_env_with_git()` workflow that wires environment
-  variables into interpolation.
+  and the `Settings::from_source_with_git()` workflow that wires environment
+  variables into interpolation. The tests inject a closed
+  `ortho_config::MapEnv`; `Settings::from_env_with_git()` passes
+  `ortho_config::ProcessEnv`.
 
 ## Alternatives considered
 

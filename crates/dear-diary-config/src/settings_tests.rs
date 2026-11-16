@@ -2,85 +2,8 @@
 
 use super::*;
 use crate::interpolation::MockGitContext;
+use ortho_config::MapEnv;
 use rstest::rstest;
-use std::collections::HashMap;
-use std::sync::{Mutex, MutexGuard};
-
-static ENV_MUTEX: Mutex<()> = Mutex::new(());
-
-const SETTINGS_ENV_KEYS: &[&str] = &[
-    "COLLECTION_NAME",
-    "EMBEDDING_MODEL",
-    "QDRANT_ALLOW_ARBITRARY_FILTER",
-    "QDRANT_API_KEY",
-    "QDRANT_LOCAL_PATH",
-    "QDRANT_READ_ONLY",
-    "QDRANT_SEARCH_LIMIT",
-    "QDRANT_URL",
-    "TOOL_FIND_DESCRIPTION",
-    "TOOL_STORE_DESCRIPTION",
-];
-
-/// Guard that restores settings-related environment variables on drop.
-struct EnvGuard {
-    lock: MutexGuard<'static, ()>,
-    saved: HashMap<&'static str, Option<String>>,
-}
-
-impl EnvGuard {
-    /// Captures and clears settings-related environment variables.
-    fn new() -> Self {
-        let lock = match ENV_MUTEX.lock() {
-            Ok(lock) => lock,
-            Err(poisoned) => poisoned.into_inner(),
-        };
-        let saved = SETTINGS_ENV_KEYS
-            .iter()
-            .map(|key| (*key, std::env::var(key).ok()))
-            .collect();
-        let guard = Self { lock, saved };
-        for key in SETTINGS_ENV_KEYS {
-            guard.remove(key);
-        }
-        guard
-    }
-
-    /// Sets an environment variable while the guard serializes access.
-    fn set(&self, key: &'static str, value: &str) {
-        std::hint::black_box(&self.lock);
-        // SAFETY: tests mutate process-global environment only while holding
-        // ENV_MUTEX, and EnvGuard restores the previous values.
-        unsafe {
-            std::env::set_var(key, value);
-        }
-    }
-
-    /// Removes an environment variable while the guard serializes access.
-    fn remove(&self, key: &'static str) {
-        std::hint::black_box(&self.lock);
-        // SAFETY: tests mutate process-global environment only while holding
-        // ENV_MUTEX, and EnvGuard restores the previous values.
-        unsafe {
-            std::env::remove_var(key);
-        }
-    }
-
-    /// Restores one environment variable to its captured value.
-    fn restore(&self, key: &'static str, saved_value: Option<&str>) {
-        match saved_value {
-            Some(original) => self.set(key, original),
-            None => self.remove(key),
-        }
-    }
-}
-
-impl Drop for EnvGuard {
-    fn drop(&mut self) {
-        for (key, saved_value) in &self.saved {
-            self.restore(key, saved_value.as_deref());
-        }
-    }
-}
 
 #[rstest]
 fn test_default_tool_settings() {
@@ -167,9 +90,9 @@ fn test_filterable_fields_map() {
 
 #[rstest]
 fn test_from_env_with_git_resolves_collection_name_placeholders() {
-    let env = EnvGuard::new();
-    env.set("QDRANT_URL", "http://localhost:6334");
-    env.set("COLLECTION_NAME", "{owner}-{repo}-{cwd}-{branch}");
+    let env = MapEnv::new()
+        .with_var("QDRANT_URL", "http://localhost:6334")
+        .with_var("COLLECTION_NAME", "{owner}-{repo}-{cwd}-{branch}");
 
     let mut git = MockGitContext::new();
     git.expect_remote_url()
@@ -180,7 +103,7 @@ fn test_from_env_with_git_resolves_collection_name_placeholders() {
         .returning(|| Ok(Some("adopt-whitaker-lints".to_owned())));
 
     let settings =
-        Settings::from_env_with_git(&git).expect("settings should load from environment");
+        Settings::from_source_with_git(&env, &git).expect("settings should load from environment");
 
     assert_eq!(
         settings.qdrant.collection_name.as_deref(),
@@ -194,14 +117,14 @@ fn test_from_env_with_git_resolves_collection_name_placeholders() {
 
 #[rstest]
 fn test_from_env_with_git_reports_unresolved_collection_name_placeholders() {
-    let env = EnvGuard::new();
-    env.set("QDRANT_URL", "http://localhost:6334");
-    env.set("COLLECTION_NAME", "{owner}-{repo}");
+    let env = MapEnv::new()
+        .with_var("QDRANT_URL", "http://localhost:6334")
+        .with_var("COLLECTION_NAME", "{owner}-{repo}");
 
     let mut git = MockGitContext::new();
     git.expect_remote_url().returning(|| Ok(None));
 
-    let err = Settings::from_env_with_git(&git)
+    let err = Settings::from_source_with_git(&env, &git)
         .expect_err("settings should reject unresolved collection placeholders");
 
     assert!(
