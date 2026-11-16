@@ -2,8 +2,14 @@
 
 use super::*;
 use crate::interpolation::MockGitContext;
-use ortho_config::MapEnv;
+use ortho_config::{EnvSource, MapEnv};
 use rstest::rstest;
+
+/// A variable lookup over the closed `env`, as `Settings::from_lookup_with_git`
+/// takes it.
+fn lookup_in(env: &MapEnv) -> impl Fn(&str) -> Option<String> + '_ {
+    |name| env.get(name).and_then(|value| value.into_string().ok())
+}
 
 #[rstest]
 fn test_default_tool_settings() {
@@ -102,8 +108,8 @@ fn test_from_env_with_git_resolves_collection_name_placeholders() {
     git.expect_branch_name()
         .returning(|| Ok(Some("adopt-whitaker-lints".to_owned())));
 
-    let settings =
-        Settings::from_source_with_git(&env, &git).expect("settings should load from environment");
+    let settings = Settings::from_lookup_with_git(lookup_in(&env), &git)
+        .expect("settings should load from environment");
 
     assert_eq!(
         settings.qdrant.collection_name.as_deref(),
@@ -124,7 +130,7 @@ fn test_from_env_with_git_reports_unresolved_collection_name_placeholders() {
     let mut git = MockGitContext::new();
     git.expect_remote_url().returning(|| Ok(None));
 
-    let err = Settings::from_source_with_git(&env, &git)
+    let err = Settings::from_lookup_with_git(lookup_in(&env), &git)
         .expect_err("settings should reject unresolved collection placeholders");
 
     assert!(

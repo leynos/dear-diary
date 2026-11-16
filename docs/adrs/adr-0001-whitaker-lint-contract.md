@@ -45,10 +45,8 @@ panicking or hiding fallibility.
   helper can fail, it should return `Result` or keep the failure inside the
   test body.
 - Configuration-loading tests should cover both isolated interpolation helpers
-  and the `Settings::from_source_with_git()` workflow that wires environment
-  variables into interpolation. The tests inject a closed
-  `ortho_config::MapEnv`; `Settings::from_env_with_git()` passes
-  `ortho_config::ProcessEnv`.
+  and the `Settings::from_env_with_git()` workflow that wires environment
+  variables into interpolation.
 
 ## Alternatives considered
 
@@ -67,4 +65,13 @@ The workspace no longer selects the Cranelift backend, so CI runs plain
 `whitaker-installer` before `make lint`. The `--cranelift` flag built the lint
 drivers for a Cranelift development profile that the repository has dropped;
 the reason is recorded under "Cranelift exception" in the developers' guide.
+The decision above is otherwise unchanged.
+
+## Addendum: 2026-11-16
+
+The configuration-testing consequence above now reads through an injected
+lookup rather than the process environment. `Settings::from_lookup_with_git()`
+takes a closure that resolves a variable by name, and
+`Settings::from_env_with_git()` supplies the process environment to it, so
+tests inject a closed `ortho_config::MapEnv` and nothing mutates the process.
 The decision above is otherwise unchanged.
