@@ -269,3 +269,62 @@ fn lookup_treats_a_non_unicode_value_as_absent() {
         Some("/tmp/qdrant")
     );
 }
+
+/// Marks the re-run of this binary that reads its own live environment.
+const CHILD_MARKER: &str = "DEAR_DIARY_TEST_PROCESS_PATH_CHILD";
+
+/// `Settings::from_env_with_git` reads the live process environment on purpose,
+/// so the parent re-runs this binary as a child that carries the variables and
+/// changes nothing in its own process. The child inherits the rest of the
+/// parent's environment, which keeps `LLVM_PROFILE_FILE` for coverage runs.
+#[rstest]
+fn from_env_with_git_reads_the_process_environment() {
+    if std::env::var_os(CHILD_MARKER).is_some() {
+        assert_process_path_reads_the_environment();
+        return;
+    }
+    let mut child = std::process::Command::new(std::env::current_exe().expect("test binary path"));
+    child
+        .args([
+            "--exact",
+            "settings::tests::from_env_with_git_reads_the_process_environment",
+            "--nocapture",
+        ])
+        .env(CHILD_MARKER, "1")
+        .env("QDRANT_URL", "http://localhost:6334")
+        .env("COLLECTION_NAME", "{owner}-{repo}")
+        .env("QDRANT_SEARCH_LIMIT", "42");
+    #[cfg(unix)]
+    {
+        use std::os::unix::ffi::OsStringExt as _;
+        child.env(
+            "QDRANT_API_KEY",
+            std::ffi::OsString::from_vec(vec![0xff, 0xfe]),
+        );
+    }
+    let status = child.status().expect("run the child test binary");
+    assert!(status.success(), "the child run failed: {status}");
+}
+
+/// The child half: the production path sees the variables, resolves the
+/// placeholders through the git context, and reads a non-Unicode value as
+/// absent.
+fn assert_process_path_reads_the_environment() {
+    let mut git = MockGitContext::new();
+    git.expect_remote_url()
+        .returning(|| Ok(Some("git@github.com:leynos/dear-diary.git".to_owned())));
+
+    let settings = Settings::from_env_with_git(&git).expect("the child environment loads");
+
+    assert_eq!(
+        settings.qdrant.qdrant_url.as_deref(),
+        Some("http://localhost:6334")
+    );
+    assert_eq!(
+        settings.qdrant.collection_name.as_deref(),
+        Some("leynos-dear-diary")
+    );
+    assert_eq!(settings.qdrant.search_limit, 42);
+    #[cfg(unix)]
+    assert_eq!(settings.qdrant.qdrant_api_key, None);
+}
