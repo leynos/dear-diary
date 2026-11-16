@@ -138,3 +138,134 @@ fn test_from_env_with_git_reports_unresolved_collection_name_placeholders() {
         "expected unresolved placeholder error, got {err:?}"
     );
 }
+
+/// Loads settings from `env` with a git context that no case here consults.
+fn load(env: &MapEnv) -> Result<Settings, ConfigError> {
+    Settings::from_lookup_with_git(lookup_in(env), &MockGitContext::new())
+}
+
+/// The smallest environment that passes validation.
+fn connected_env() -> MapEnv {
+    MapEnv::new().with_var("QDRANT_URL", "http://localhost:6334")
+}
+
+#[rstest]
+fn lookup_defaults_apply_when_only_a_connection_is_named() {
+    let settings = load(&connected_env()).expect("a connected environment loads");
+
+    assert_eq!(settings.embedding_model, DEFAULT_EMBEDDING_MODEL);
+    assert_eq!(
+        settings.tools.tool_store_description,
+        DEFAULT_TOOL_STORE_DESCRIPTION
+    );
+    assert_eq!(
+        settings.tools.tool_find_description,
+        DEFAULT_TOOL_FIND_DESCRIPTION
+    );
+    assert_eq!(settings.qdrant.search_limit, DEFAULT_SEARCH_LIMIT);
+    assert!(!settings.qdrant.read_only);
+    assert!(!settings.qdrant.allow_arbitrary_filter);
+    assert_eq!(settings.qdrant.qdrant_api_key, None);
+    assert_eq!(settings.qdrant.collection_name, None);
+}
+
+#[rstest]
+fn lookup_overrides_replace_every_default() {
+    let env = connected_env()
+        .with_var("QDRANT_API_KEY", "secret")
+        .with_var("COLLECTION_NAME", "plain-name")
+        .with_var("EMBEDDING_MODEL", "custom/model")
+        .with_var("QDRANT_SEARCH_LIMIT", "25")
+        .with_var("QDRANT_READ_ONLY", "true")
+        .with_var("QDRANT_ALLOW_ARBITRARY_FILTER", "1")
+        .with_var("TOOL_STORE_DESCRIPTION", "store it")
+        .with_var("TOOL_FIND_DESCRIPTION", "find it");
+
+    let mut git = MockGitContext::new();
+    git.expect_remote_url().returning(|| Ok(None));
+    let settings = Settings::from_lookup_with_git(lookup_in(&env), &git)
+        .expect("a fully named environment loads");
+
+    assert_eq!(settings.embedding_model, "custom/model");
+    assert_eq!(settings.tools.tool_store_description, "store it");
+    assert_eq!(settings.tools.tool_find_description, "find it");
+    assert_eq!(settings.qdrant.qdrant_api_key.as_deref(), Some("secret"));
+    assert_eq!(
+        settings.qdrant.collection_name.as_deref(),
+        Some("plain-name")
+    );
+    assert_eq!(settings.qdrant.search_limit, 25);
+    assert!(settings.qdrant.read_only);
+    assert!(settings.qdrant.allow_arbitrary_filter);
+}
+
+#[rstest]
+#[case::true_word("true", true)]
+#[case::one("1", true)]
+#[case::false_word("false", false)]
+#[case::zero("0", false)]
+#[case::capitalised("True", false)]
+#[case::yes("yes", false)]
+#[case::empty("", false)]
+fn lookup_parses_boolean_flags(#[case] value: &str, #[case] expected: bool) {
+    let env = connected_env()
+        .with_var("QDRANT_READ_ONLY", value)
+        .with_var("QDRANT_ALLOW_ARBITRARY_FILTER", value);
+
+    let settings = load(&env).expect("a connected environment loads");
+
+    assert_eq!(settings.qdrant.read_only, expected);
+    assert_eq!(settings.qdrant.allow_arbitrary_filter, expected);
+}
+
+#[rstest]
+#[case::valid("25", 25)]
+#[case::zero("0", 0)]
+#[case::not_a_number("many", DEFAULT_SEARCH_LIMIT)]
+#[case::negative("-3", DEFAULT_SEARCH_LIMIT)]
+#[case::empty("", DEFAULT_SEARCH_LIMIT)]
+fn lookup_parses_the_search_limit(#[case] value: &str, #[case] expected: u32) {
+    let env = connected_env().with_var("QDRANT_SEARCH_LIMIT", value);
+
+    let settings = load(&env).expect("a connected environment loads");
+
+    assert_eq!(settings.qdrant.search_limit, expected);
+}
+
+#[rstest]
+fn lookup_rejects_both_connection_modes() {
+    let env = connected_env().with_var("QDRANT_LOCAL_PATH", "/tmp/qdrant");
+
+    assert!(matches!(
+        load(&env),
+        Err(ConfigError::ConflictingConnectionModes)
+    ));
+}
+
+#[rstest]
+fn lookup_rejects_a_missing_connection() {
+    assert!(matches!(
+        load(&MapEnv::new()),
+        Err(ConfigError::MissingConnectionConfig)
+    ));
+}
+
+/// A value that is not valid Unicode reads as absent, as `std::env::var(..).ok()`
+/// did, so the other connection mode still validates on its own.
+#[cfg(unix)]
+#[rstest]
+fn lookup_treats_a_non_unicode_value_as_absent() {
+    use std::os::unix::ffi::OsStringExt as _;
+
+    let env = MapEnv::new()
+        .with_var("QDRANT_URL", std::ffi::OsString::from_vec(vec![0xff, 0xfe]))
+        .with_var("QDRANT_LOCAL_PATH", "/tmp/qdrant");
+
+    let settings = load(&env).expect("the non-Unicode URL reads as absent");
+
+    assert_eq!(settings.qdrant.qdrant_url, None);
+    assert_eq!(
+        settings.qdrant.qdrant_local_path.as_deref(),
+        Some("/tmp/qdrant")
+    );
+}

@@ -66,12 +66,3 @@ The workspace no longer selects the Cranelift backend, so CI runs plain
 drivers for a Cranelift development profile that the repository has dropped;
 the reason is recorded under "Cranelift exception" in the developers' guide.
 The decision above is otherwise unchanged.
-
-## Addendum: 2026-11-16
-
-The configuration-testing consequence above now reads through an injected
-lookup rather than the process environment. `Settings::from_lookup_with_git()`
-takes a closure that resolves a variable by name, and
-`Settings::from_env_with_git()` supplies the process environment to it, so
-tests inject a closed `ortho_config::MapEnv` and nothing mutates the process.
-The decision above is otherwise unchanged.
