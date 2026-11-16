@@ -150,6 +150,30 @@ absence of a codegen backend, the Linux linker settings, guarded CI
 installation of the linkers through `setup-rust`, and the coverage action
 carve-out.
 
+## Testing configuration loading
+
+`Settings::from_env_with_git` reads the process environment, and every other
+path reads through `Settings::from_lookup_with_git`, which takes a closure that
+resolves a variable by name and returns `None` when it is unset or not valid
+Unicode. This is the narrow closure seam that `AGENTS.md` permits where a trait
+object would be disproportionate; `process_lookup` is its production
+composition root and goes through `ortho_config::ProcessEnv`. Tests build a
+closed `ortho_config::MapEnv` and pass a closure over it, so no test writes the
+process environment and the cases run concurrently
+(`crates/dear-diary-config/src/settings_tests.rs`). `clippy.toml` disallows
+`std::env::set_var`, `remove_var` and `std::env::set_current_dir`, so a test
+cannot mutate the process instead. A new configuration variable gets a case
+there for its default, its override and, for a parsed value, its invalid form.
+
+The production path through the real process environment is covered at the
+binary boundary: `crates/dear-diary/tests/config_environment_tests.rs` runs the
+generated `dear-diary` binary through `assert_cmd` with a child environment
+(`env` and `env_remove`, which change nothing in the test process, and
+`GIT_CEILING_DIRECTORIES` so interpolation sees only a bare directory) and
+checks the configuration errors it reports, including a non-Unicode value
+reading as absent. Each case stops at the configuration step, so none needs a
+Qdrant server.
+
 ## Release workflow
 
 The release workflow is defined in `.github/workflows/release.yml`. It runs

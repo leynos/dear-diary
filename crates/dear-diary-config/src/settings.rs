@@ -1,5 +1,6 @@
 //! Configuration settings for the Dear Diary MCP server.
 
+use ortho_config::{EnvSource as _, ProcessEnv};
 use serde::{Deserialize, Serialize};
 
 use crate::error::ConfigError;
@@ -258,33 +259,50 @@ impl Settings {
     /// Returns an error if required configuration is missing, invalid,
     /// or if placeholders in `COLLECTION_NAME` cannot be resolved.
     pub fn from_env_with_git(git: &impl interpolation::GitContext) -> Result<Self, ConfigError> {
-        let collection_name = std::env::var("COLLECTION_NAME")
-            .ok()
+        Self::from_lookup_with_git(process_lookup, git)
+    }
+
+    /// Loads settings from an injected variable lookup using the provided git
+    /// context for placeholder resolution.
+    ///
+    /// `lookup` resolves a variable by name and returns `None` when it is unset
+    /// or not valid Unicode. [`from_env_with_git`](Self::from_env_with_git)
+    /// passes the process environment; tests pass a closure over a closed
+    /// [`ortho_config::MapEnv`], so nothing reads or writes the process.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if required configuration is missing, invalid,
+    /// or if placeholders in `COLLECTION_NAME` cannot be resolved.
+    pub fn from_lookup_with_git(
+        lookup: impl Fn(&str) -> Option<String>,
+        git: &impl interpolation::GitContext,
+    ) -> Result<Self, ConfigError> {
+        let collection_name = lookup("COLLECTION_NAME")
             .map(|raw| interpolation::interpolate_collection_name(&raw, git))
             .transpose()?;
 
         let settings = Self {
             tools: ToolSettings {
-                tool_store_description: std::env::var("TOOL_STORE_DESCRIPTION")
-                    .unwrap_or_else(|_| DEFAULT_TOOL_STORE_DESCRIPTION.to_owned()),
-                tool_find_description: std::env::var("TOOL_FIND_DESCRIPTION")
-                    .unwrap_or_else(|_| DEFAULT_TOOL_FIND_DESCRIPTION.to_owned()),
+                tool_store_description: lookup("TOOL_STORE_DESCRIPTION")
+                    .unwrap_or_else(|| DEFAULT_TOOL_STORE_DESCRIPTION.to_owned()),
+                tool_find_description: lookup("TOOL_FIND_DESCRIPTION")
+                    .unwrap_or_else(|| DEFAULT_TOOL_FIND_DESCRIPTION.to_owned()),
             },
             qdrant: QdrantSettings {
-                qdrant_url: std::env::var("QDRANT_URL").ok(),
-                qdrant_api_key: std::env::var("QDRANT_API_KEY").ok(),
+                qdrant_url: lookup("QDRANT_URL"),
+                qdrant_api_key: lookup("QDRANT_API_KEY"),
                 collection_name,
-                qdrant_local_path: std::env::var("QDRANT_LOCAL_PATH").ok(),
-                search_limit: std::env::var("QDRANT_SEARCH_LIMIT")
-                    .ok()
+                qdrant_local_path: lookup("QDRANT_LOCAL_PATH"),
+                search_limit: lookup("QDRANT_SEARCH_LIMIT")
                     .and_then(|s| s.parse().ok())
                     .unwrap_or(DEFAULT_SEARCH_LIMIT),
-                read_only: env_var_bool("QDRANT_READ_ONLY"),
+                read_only: lookup_bool(&lookup, "QDRANT_READ_ONLY"),
                 filterable_fields: Vec::new(),
-                allow_arbitrary_filter: env_var_bool("QDRANT_ALLOW_ARBITRARY_FILTER"),
+                allow_arbitrary_filter: lookup_bool(&lookup, "QDRANT_ALLOW_ARBITRARY_FILTER"),
             },
-            embedding_model: std::env::var("EMBEDDING_MODEL")
-                .unwrap_or_else(|_| DEFAULT_EMBEDDING_MODEL.to_owned()),
+            embedding_model: lookup("EMBEDDING_MODEL")
+                .unwrap_or_else(|| DEFAULT_EMBEDDING_MODEL.to_owned()),
         };
 
         settings.qdrant.validate()?;
@@ -296,11 +314,22 @@ fn default_embedding_model() -> String {
     DEFAULT_EMBEDDING_MODEL.to_owned()
 }
 
+/// Reads `name` from the process environment as text.
+///
+/// The production composition root of the lookup seam. A variable that is
+/// unset, or whose value is not valid Unicode, reads as absent, matching
+/// `std::env::var(..).ok()`.
+fn process_lookup(name: &str) -> Option<String> {
+    ProcessEnv
+        .get(name)
+        .and_then(|value| value.into_string().ok())
+}
+
 /// Parses a boolean value from an environment variable.
 ///
 /// Returns `true` if the variable is set to "true" or "1", `false` otherwise.
-fn env_var_bool(name: &str) -> bool {
-    std::env::var(name).is_ok_and(|v| v == "true" || v == "1")
+fn lookup_bool(lookup: &impl Fn(&str) -> Option<String>, name: &str) -> bool {
+    lookup(name).is_some_and(|v| v == "true" || v == "1")
 }
 
 #[cfg(test)]
