@@ -92,6 +92,14 @@ remote URL parser owns URL-shape decisions. This keeps configuration loading
 testable without allowing startup parsing logic to grow into a single
 multi-purpose function.
 
+Cognitive complexity is not gated by Clippy. Clippy's `cognitive_complexity`
+scores code after macro expansion, so it counts branching a macro generated,
+and neither `Cargo.toml` nor `clippy.toml` enables it. Whitaker's experimental
+`macro_aware_cognitive_complexity` gates it at `max_complexity = 9`,
+CodeScene's ceiling. `dylint.toml` opts in with
+`[whitaker] experimental = ["macro_aware_cognitive_complexity"]`. Fix a finding
+by extracting named helpers, never by raising the threshold.
+
 The architectural decision is recorded in
 [`docs/adrs/adr-0001-whitaker-lint-contract.md`](adrs/adr-0001-whitaker-lint-contract.md).
 
